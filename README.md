@@ -1,7 +1,14 @@
 # Alert
 
-이 프로젝트는 카프카에서 수신된 메시지를 다양한 방법으로 처리할 수 있도록 합니다.
+> 이 프로젝트는 카프카에서 수신된 메시지를 다양한 방법으로 처리할 수 있도록 합니다.
 
+## How To Execute
+```bash
+docker build -t alert .
+docker run -e KAFKA_BROKERS=host1:port1,host2:port2,host3:port3 alert
+```
+
+## How To Use
 이 프로젝트 구조에서 새로운 처리를 추가하기 위해서는 `callback` 폴더에 새로운 `*.py` 를 만듭니다.
 
 이후 아래와 같이 `callback` 이라는 이름을 가진 함수를 생성합니다.
