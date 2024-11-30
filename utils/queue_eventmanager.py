@@ -42,7 +42,7 @@ class MessageQueue:
                     bootstrap_servers=self.bootstrap_servers,
                     auto_offset_reset='earliest',
                     enable_auto_commit=True,
-                    group_id=f'backend-{self.topic_name}-group',
+                    group_id=f'alert-{self.topic_name}-group',
                     value_deserializer=lambda x: json.loads(x.decode('utf-8')),
                     key_deserializer=lambda x: x.decode('utf-8'),
                     session_timeout_ms=90000,  # 세션 타임아웃 증가
@@ -97,7 +97,7 @@ class Consumer(MessageQueue):
                     if message:
                         key = message.key
                         value = message.value
-                        logger.info(f"Received message {key}:{value}")
+                        logger.info(f"Received message[{self.topic_name}] {key}:{value}")
                         if isinstance(value, str):
                             value = json.loads(value)
                         
