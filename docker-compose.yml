@@ -8,7 +8,6 @@ services:
       dockerfile: dockerfile
     container_name: alert_server
     environment:
-      - KAFKA_TOPIC=${KAFKA_TOPIC}
       - KAFKA_BROKERS=${KAFKA_BROKERS}
       - LOG_DIR=${LOG_DIR}
     volumes:
