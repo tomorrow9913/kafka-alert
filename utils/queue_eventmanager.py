@@ -44,6 +44,7 @@ class MessageQueue:
                     enable_auto_commit=True,
                     group_id=f'backend-{self.topic_name}-group',
                     value_deserializer=lambda x: json.loads(x.decode('utf-8')),
+                    key_deserializer=lambda x: x.decode('utf-8'),
                     session_timeout_ms=90000,  # 세션 타임아웃 증가
                     heartbeat_interval_ms=30000,  # 하트비트 간격 증가
                     request_timeout_ms=95000,  # 요청 타임아웃 증가
@@ -94,9 +95,9 @@ class Consumer(MessageQueue):
                 try:
                     message = await asyncio.to_thread(next, self.client)
                     if message:
-                        logger.info(f"Received message:{message.value}")
                         key = message.key
                         value = message.value
+                        logger.info(f"Received message {key}:{value}")
                         if isinstance(value, str):
                             value = json.loads(value)
                         
