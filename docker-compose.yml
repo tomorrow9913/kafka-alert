@@ -1,0 +1,16 @@
+version: '0.0.1'
+
+services:
+  kafka-connect:
+    image: registry.yamong.dev/alert_server:main
+    build:
+      context: .
+      dockerfile: dockerfile
+    container_name: alert_server
+    environment:
+      - KAFKA_TOPIC=${KAFKA_TOPIC}
+      - KAFKA_BROKERS=${KAFKA_BROKERS}
+      - LOG_DIR=${LOG_DIR}
+    volumes:
+      - ./log:/var/log/alert
+    restart: always
