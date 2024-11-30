@@ -20,12 +20,18 @@ async def main():
         exit(-1)
         
     logger.info("Initializing event manager")
-    event_manager = EventManager(kafka_brokers, topic)
+    
+    all_topic_sub_callbacks = callbacks.pop("all", [])
+    
     
     logger.info("Subscribing to callbacks")
-    for callback in callbacks:
-        logger.info(f"Subscribing {callback} to {topic} topic")
-        event_manager.subscribe(callback, topic)
+    for topic in callbacks.keys():
+        event_manager = EventManager(kafka_brokers, topic)
+        
+        callbacks[topic].extend(all_topic_sub_callbacks)
+        for callback in callbacks[topic]:           
+            logger.info(f"Subscribing {callback.name} to {topic} topic")
+            event_manager.subscribe(callback.func, topic)
     
     try:
         logger.info("Starting event manager")
