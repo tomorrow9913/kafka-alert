@@ -30,7 +30,7 @@ async def main():
         
         callbacks[topic].extend(all_topic_sub_callbacks)
         for callback in callbacks[topic]:           
-            logger.info(f"Subscribing {callback.name} to {topic} topic")
+            logger.info(f"Subscribing {callback.name} to {topic} topic-{callback.func}")
             event_manager.subscribe(callback.func, topic)
     
     try:

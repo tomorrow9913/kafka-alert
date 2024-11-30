@@ -2,19 +2,20 @@ import os
 from discordwebhook import Discord
 from datetime import datetime, timezone
 
-ALERT_DISABLE = True
+from utils.logger import setup_logging
 
-def callback(key: str, value :dict) -> None:
-    try:
+logger = setup_logging(__name__)
+
+alert = None
+async def callback(key: str, value :dict) -> None:
+    global alert
+    if alert is None:
         webhook_url = os.getenv("DISCORD_WEBHOOK_URL")
         if webhook_url is None:
+            logger.debug("No Discord webhook URL configured")       
             return
-        Alert(webhook_url).send_alert(value)
-    except Exception as e:
-        print(f"Error in callback: {str(e)}")
-        raise
-    finally:
-        pass
+        alert = Alert(webhook_url)
+    alert.send_alert(value)
 
 class Alert:
     def __init__(self, webhook_url: str):
@@ -34,7 +35,7 @@ class Alert:
                 avatar_url="https://t3.ftcdn.net/jpg/01/93/90/82/360_F_193908219_ak4aB1PzlhizUVGLOVowzHICc3tl6WeX.jpg",
                 embeds=[{
                     "title": "LSM Block Alert",
-                    "description": f"컨테이너에서 {'의심스런' if ret_val == -1 else '아래'} 접근이 {'차단' if ret_val == -1 else '허용'} 되었습니다.",
+                    "description": f"컨테이너에서 {"의심스런" if ret_val == -1 else "아래"} 접근이 {"차단" if ret_val == -1 else "허용"} 되었습니다.",
                     "fields": [
                         {
                         "name": "🚨 Event ID",
@@ -58,11 +59,11 @@ class Alert:
                         },
                         {
                         "name": "📦 Container Information",
-                        
+                        "value": f"NAME: {container_data["name"] if container_data else "None"}, Image: {container_data["image"] if container_data else "None"}\nMNT_NS: {data['container_id']['mnt_ns']}\nPID_NS: {data['container_id']['pid_ns']}\nCGROUP_ID: {data['cgroup_id']}"
                         },
                         {
                         "name": "👤 Process Information",
-                        "value": f"NAME: {container_data['name'] if container_data else 'None'}, Image: {container_data['image'] if container_data else 'None'}\nMNT_NS: {data['container_id']['mnt_ns']}\nPID_NS: {data['container_id']['pid_ns']}\nCGROUP_ID: {data['cgroup_id']}"
+                        "value": f"UID: {data['process']['uid']}\nPID: {data['process']['pid']}\nPPID: {data['process']['ppid']}\nHOST_PID: {data['process']['host_pid']}\nHOST_PPID: {data['process']['host_ppid']}"
                         },
                         {
                         "name": "⏰ Timestamp",

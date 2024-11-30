@@ -44,10 +44,10 @@ class MessageQueue:
                     enable_auto_commit=True,
                     group_id=f'alert-{self.topic_name}-group',
                     value_deserializer=lambda x: json.loads(x.decode('utf-8')),
-                    key_deserializer=lambda x: x.decode('utf-8'),
-                    session_timeout_ms=90000,  # 세션 타임아웃 증가
-                    heartbeat_interval_ms=30000,  # 하트비트 간격 증가
-                    request_timeout_ms=95000,  # 요청 타임아웃 증가
+                    key_deserializer=lambda x: x.decode('utf-8') if x else None,
+                    session_timeout_ms=30000,  # 세션 타임아웃 증가
+                    heartbeat_interval_ms=10000,  # 하트비트 간격 증가
+                    request_timeout_ms=35000,  # 요청 타임아웃 증가
                     connections_max_idle_ms=180000,
                     max_poll_interval_ms=300000,
                     api_version_auto_timeout_ms=60000,  # API 버전 체크 타임아웃 증가
@@ -98,12 +98,15 @@ class Consumer(MessageQueue):
                         key = message.key
                         value = message.value
                         logger.info(f"Received message[{self.topic_name}] {key}:{value}")
+                        logger.debug(f"Message partition: {message.partition}, offset: {message.offset}")
                         if isinstance(value, str):
                             value = json.loads(value)
                         
-                        await asyncio.gather(
+                        logger.info(f"callback({len(self.event_bus.subscribers)}): {', '.join([str(callback) for callback in self.event_bus.subscribers])}")
+                        result = await asyncio.gather(
                             *[callback(key, value) for callback in self.event_bus.subscribers]
                         )
+                        logger.debug(f"Gather completed: {result}")
                 except Exception as e:
                     logger.error(f"Error reading message {self.topic_name}: {e}")
                     await asyncio.sleep(1)
