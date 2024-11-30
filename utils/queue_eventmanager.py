@@ -97,7 +97,6 @@ class Consumer(MessageQueue):
                     if message:
                         key = message.key
                         value = message.value
-                        logger.info(f"Received message[{self.topic_name}] {key}:{value}")
                         logger.debug(f"Message partition: {message.partition}, offset: {message.offset}")
                         if isinstance(value, str):
                             value = json.loads(value)
