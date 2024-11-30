@@ -1,2 +1,6 @@
+import utils.logger
+
+logger = utils.logger.setup_logging(__name__)
+
 async def callback(key, value):
-    print(f"Received {key}: {value}")
+    logger.info(f"Received {key}: {value}")
