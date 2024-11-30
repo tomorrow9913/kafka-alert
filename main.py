@@ -11,7 +11,7 @@ logger = None
 async def main():
     global logger
     global event_manager
-    logger = setup_logging(__name__, os.getenv("LOG_DIR", "logs"))
+    logger = setup_logging(__name__)
     
     kafka_brokers = os.getenv("KAFKA_BROKERS")
     if not kafka_brokers:

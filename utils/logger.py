@@ -4,6 +4,12 @@ import logging
 from logging.handlers import RotatingFileHandler
 
 def setup_logging(logger_name: str, log_dir: str = os.getenv("LOG_DIR", "logs")) -> logging.Logger:
+    logger = logging.getLogger(logger_name)
+
+    # 이미 핸들러가 있다면 리턴
+    if logger.handlers:
+        return logger
+
     log_format = '%(asctime)s - [%(levelname)s] %(name)s - %(message)s'
     formatter = logging.Formatter(log_format)
     
