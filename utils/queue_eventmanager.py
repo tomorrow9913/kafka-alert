@@ -5,6 +5,9 @@ import time
 from kafka import KafkaConsumer, KafkaProducer
 from kafka.errors import NoBrokersAvailable
 from contextlib import contextmanager
+from utils.logger import setup_logging
+
+logger = setup_logging(__name__)
 
 class EventBus:
     def __init__(self):
@@ -25,6 +28,7 @@ class EventBus:
 
 class MessageQueue:
     def __init__(self, kafka_brokers: str, topic_name: str, max_retries: int=3):
+        logger.info(f"Creating consumer for topic {topic_name}")
         self.max_retries = max_retries
         self.bootstrap_servers = kafka_brokers.split(",")
         self.topic_name = topic_name
@@ -69,11 +73,13 @@ class MessageQueue:
             self.close()
     
     def close(self):
+        """컨슈머 종료"""
+        logger.info(f"Closing consumer for topic {self.topic_name}")
         try:
             if self.client:
                 self.client.close()
         except Exception as e:
-            print(f"Error while closing consumer: {str(e)}")
+            logger.error(f"Error while closing consumer: {str(e)}")
         
 class Consumer(MessageQueue):
     def __init__(self, kafka_broker: str, topic_name: str, event_bus: EventBus, max_retries=3):
@@ -83,10 +89,12 @@ class Consumer(MessageQueue):
 
     async def start(self):
         async def run_consumer():
+            logger.info(f"Starting consumer for topic {self.topic_name}")
             while True:
                 try:
                     message = await asyncio.to_thread(next, self.client)
                     if message:
+                        logger.info(f"Received message:{message.value}")
                         key = message.key
                         value = message.value
                         if isinstance(value, str):
@@ -96,11 +104,11 @@ class Consumer(MessageQueue):
                             *[callback(key, value) for callback in self.event_bus.subscribers]
                         )
                 except Exception as e:
-                    print(f"Error reading message {self.topic_name}: {e}")
+                    logger.error(f"Error reading message {self.topic_name}: {e}")
                     await asyncio.sleep(1)
         
-        # 백그라운드 태스크 생성
-        self._consumer_task = asyncio.create_task(run_consumer())
+        if not hasattr(self, '_consumer_task'):
+            self._consumer_task = asyncio.create_task(run_consumer())
     
     async def stop(self, topic: str):
         if hasattr(self, '_consumer_task'):
@@ -109,6 +117,7 @@ class Consumer(MessageQueue):
                 await self._consumer_task
             except asyncio.CancelledError:
                 pass
+        self.close()
 
 class EventManager:
     _instance = None
@@ -130,10 +139,7 @@ class EventManager:
         self.consumers[topic_name] = Consumer(kafka_broker, topic_name, self.event_buses[topic_name], max_retries)
 
     async def start(self, topic_name: str):
-        if not asyncio.get_event_loop().is_running():
-            asyncio.run(self.consumers[topic_name].start())
-        else:
-            self.consumer_tasks[topic_name] = asyncio.create_task(self.consumers[topic_name].start())
+        await self.consumers[topic_name].start()
 
     async def start_all(self):
         for topic_name in self.consumers:
@@ -141,7 +147,7 @@ class EventManager:
 
     async def stop(self, topic_name: str):
         if topic_name in self.consumers:
-            await self.consumers[topic_name].stop()
+            await self.consumers[topic_name].stop(topic_name)
             if topic_name in self.consumer_tasks:
                 await self.consumer_tasks[topic_name]
 
@@ -150,9 +156,7 @@ class EventManager:
             await self.stop(topic_name)
 
     def subscribe(self, callback: Callable, topic_name: str) -> int:
-        print(f"subscribing {topic_name} to {callback.__name__}")
         return self.event_buses[topic_name].subscribe(callback)
 
     def unsubscribe(self, subscriber_id: int, topic_name: str) -> bool:
-        print(f"unsubscribing {topic_name} to {subscriber_id}")
         return self.event_buses[topic_name].unsubscribe(subscriber_id)
