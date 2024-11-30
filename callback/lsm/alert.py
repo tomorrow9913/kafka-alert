@@ -1,3 +1,4 @@
+import os
 from discordwebhook import Discord
 from datetime import datetime, timezone
 
@@ -5,7 +6,10 @@ ALERT_DISABLE = True
 
 def callback(key: str, value :dict) -> None:
     try:
-        Alert(value['webhook_url']).send_alert(value['data'], value['container_data'])
+        webhook_url = os.getenv("DISCORD_WEBHOOK_URL")
+        if webhook_url is None:
+            return
+        Alert(webhook_url).send_alert(value)
     except Exception as e:
         print(f"Error in callback: {str(e)}")
         raise
