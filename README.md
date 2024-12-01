@@ -3,7 +3,7 @@
 > 이 프로젝트는 카프카에서 수신된 메시지를 다양한 방법으로 처리할 수 있도록 합니다.
 
 > [!IMPORTANT]
-> 이 프로젝트에서는 후술할 처리 방식에 따라 특정 이름을 가진 kafka topic을 사용할 수 없습니다.
+> 이 프로젝트에서는 후술할 처리 방식에 따라 `all` 이름을 가진 kafka topic을 사용할 수 없습니다.
 
 ## How To Execute
 ```bash
@@ -54,6 +54,8 @@ async def callback(key, value: dict):
 
 ### Add all topic processing logic
 만약 등록된 모든 토픽에 대해 동일한 처리를 하고 싶다면 `callback` **폴더**에 존재하는 `all` 폴더에 상기 함수가 포함된 python 파일을 추가하는 방식으로 처리 할 수 있습니다.
+
+이에 `all` 이름은 해당 처리를 위해 예약 되었으므로 all 이름을 가진 토픽에 대해서는 이 프로젝트는 처리 할 수 없습니다.
 
 ### Add specific topic processing logic 
 1. 특정 토픽에 대해 처리를 추가하고 싶다면 `callback` **폴더**에 원하는 토픽 이름으로 폴더를 생성하고, 이곳에 상기 함수가 포함된 python 파일을 추가하는 방식으로 처리할 수 있습니다.
