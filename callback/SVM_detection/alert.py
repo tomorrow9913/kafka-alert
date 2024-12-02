@@ -39,7 +39,7 @@ class Alert:
                         {
                         "name": "📦 Container ID",
                         "value": str(data['container_name']),
-                        "inline": True
+                        "inline": False
                         },
                         {
                         "name": "⏰ TimeStamp",
