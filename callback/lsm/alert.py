@@ -3,12 +3,45 @@ from discordwebhook import Discord
 from datetime import datetime, timezone
 
 from utils.logger import setup_logging
+from database.database import get_db
+from database import models
 
 logger = setup_logging(__name__)
 
 alert = None
+
+
 async def callback(key: str, value :dict) -> None:
     global alert
+    try: 
+        db = next(get_db())
+        try:
+            print(f"data {value['container_id']['mnt_ns']}, {value['container_id']['pid_ns']}, {value['cgroup_id']}")
+            container_query = (
+                db.query(models.InternalContainerId)
+                .join(
+                    models.Container,
+                    models.Container.id == models.InternalContainerId.container_idx
+                )
+                .filter(
+                    models.InternalContainerId.mnt_id == value['container_id']['mnt_ns'],
+                    models.InternalContainerId.pid_id == value['container_id']['pid_ns']
+                )
+                .first()
+            )
+
+            container_data = None
+            if container_query:
+                container_data = {
+                    "name": container_query.container.name,
+                    "image": container_query.image
+                }
+                
+        finally:
+            db.close()
+    except Exception as e:
+        print(f"Error Sending Alert: {str(e)}")
+    
     if alert is None:
         webhook_url = os.getenv("DISCORD_WEBHOOK_URL")
         if webhook_url is None:
