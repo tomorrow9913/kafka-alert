@@ -15,42 +15,40 @@ async def callback(key: str, value :dict) -> None:
     try: 
         db = next(get_db())
         try:
-            print(f"data {value['container_name']}")
-            container_query = (
-                db.query(models.InternalContainerId)
+            container_query = db.query(models.InternalContainerId, models.Container, models.Server)\
                 .join(
                     models.Container,
                     models.Container.id == models.InternalContainerId.container_idx
-                ).join(
+                )\
+                .join(
                     models.Server,
-                    models.Container.host_server == models.Server.id
-                )
-                .filter(
-                    models.InternalContainerId.container_id == value['container_name']
-                )
-                .first()
-            )
-
+                    models.Server.id == models.Container.host_server
+                )\
+                .filter(models.InternalContainerId.container_id == value['container_name'])\
+                .first()    
+            
             container_data = None
             if container_query:
                 container_data = {
-                    "name": container_query.container.name,
-                    "image": container_query.image,
-                    "host_name": container_query.server.name
+                    "name": container_query.Container.name,
+                    "image": container_query.InternalContainerId.image,
+                    "host_name": container_query.Server.name
                 }
                 
+            if alert is None:
+                webhook_url = os.getenv("DISCORD_WEBHOOK_URL")
+                if webhook_url is None:
+                    logger.debug("No Discord webhook URL configured")       
+                    return
+                alert = Alert(webhook_url)
+            alert.send_alert(value, container_data)
+            
+        except Exception as e:
+            logger.error(f"Error Sending Alert: {str(e)}")    
         finally:
             db.close()
     except Exception as e:
         print(f"Error Sending Alert: {str(e)}")
-    
-    if alert is None:
-        webhook_url = os.getenv("DISCORD_WEBHOOK_URL")
-        if webhook_url is None:
-            logger.debug("No Discord webhook URL configured")       
-            return
-        alert = Alert(webhook_url)
-    alert.send_alert(value)
 
 class Alert:
     def __init__(self, webhook_url: str):
@@ -104,8 +102,8 @@ class Alert:
                     "timestamp": datetime.now().isoformat()
                 }]
             )
-            print("Alert sent successfully!")
+            logger.info("Alert sent successfully!")
             
         except Exception as e:
-            print(f"Error sending Discord alert: {str(e)}")
+            logger.error(f"Error sending Discord alert: {str(e)}")
             raise
