@@ -1,4 +1,4 @@
-from typing import Callable, List
+from typing import Callable, List, Dict
 import asyncio
 import json
 import time
@@ -11,46 +11,56 @@ logger = setup_logging(__name__)
 
 class EventBus:
     def __init__(self):
-        self.subscribers: List[Callable] = []
+        self.subscribers: Dict[str, List[Callable]] = {}
     
-    def subscribe(self, callback: Callable):
-        """콜백 함수(async func) 등록"""
-        self.subscribers.append(callback)
-        return len(self.subscribers) - 1  # subscriber id 반환
+    def subscribe(self, callback: Callable, topic_name: str) -> int:
+        """토픽별 콜백 함수(async func) 등록"""
+        if topic_name not in self.subscribers:
+            self.subscribers[topic_name] = []
+        
+        self.subscribers[topic_name].append(callback)
+        return len(self.subscribers[topic_name]) - 1
     
-    def unsubscribe(self, subscriber_id: int):
-        """구독 취소"""
-        if subscriber_id < 0 or subscriber_id >= len(self.subscribers):
+    def unsubscribe(self, subscriber_id: int, topic_name: str) -> bool:
+        """토픽별 구독 취소"""
+        if topic_name not in self.subscribers:
+            return False
+            
+        if subscriber_id < 0 or subscriber_id >= len(self.subscribers[topic_name]):
             return False
         
-        self.subscribers.pop(subscriber_id)
+        self.subscribers[topic_name].pop(subscriber_id)
         return True
 
+    def get_subscribers(self, topic_name: str) -> List[Callable]:
+        """토픽의 구독자 목록 반환"""
+        return self.subscribers.get(topic_name, [])
+
 class MessageQueue:
-    def __init__(self, kafka_brokers: str, topic_name: str, max_retries: int=3):
-        logger.info(f"Creating consumer for topic {topic_name}")
+    def __init__(self, kafka_brokers: str, topics: List[str], max_retries: int = 3):
+        logger.info(f"Creating consumer for topics: {topics}")
         self.max_retries = max_retries
         self.bootstrap_servers = kafka_brokers.split(",")
-        self.topic_name = topic_name
+        self.topics = topics
         self.client = self._create_consumer()
     
     def _create_consumer(self):
         for attempt in range(self.max_retries):
             try:
                 return KafkaConsumer(
-                    self.topic_name,
+                    *self.topics,
                     bootstrap_servers=self.bootstrap_servers,
                     auto_offset_reset='earliest',
                     enable_auto_commit=True,
-                    group_id=f'alert-{self.topic_name}-group',
+                    group_id='alert-group',
                     value_deserializer=lambda x: json.loads(x.decode('utf-8')),
                     key_deserializer=lambda x: x.decode('utf-8') if x else None,
-                    session_timeout_ms=30000,  # 세션 타임아웃 증가
-                    heartbeat_interval_ms=10000,  # 하트비트 간격 증가
-                    request_timeout_ms=35000,  # 요청 타임아웃 증가
+                    session_timeout_ms=30000,
+                    heartbeat_interval_ms=10000,
+                    request_timeout_ms=35000,
                     connections_max_idle_ms=180000,
                     max_poll_interval_ms=300000,
-                    api_version_auto_timeout_ms=60000,  # API 버전 체크 타임아웃 증가
+                    api_version_auto_timeout_ms=60000,
                     security_protocol='PLAINTEXT',
                     fetch_max_wait_ms=500,
                     fetch_min_bytes=1,
@@ -65,6 +75,7 @@ class MessageQueue:
                     time.sleep(wait_time)
                 else:
                     raise
+
     @contextmanager
     def get_consumer(self):
         """컨슈머 컨텍스트 매니저"""
@@ -75,7 +86,7 @@ class MessageQueue:
     
     def close(self):
         """컨슈머 종료"""
-        logger.info(f"Closing consumer for topic {self.topic_name}")
+        logger.info(f"Closing consumer for topics: {self.topics}")
         try:
             if self.client:
                 self.client.close()
@@ -83,37 +94,41 @@ class MessageQueue:
             logger.error(f"Error while closing consumer: {str(e)}")
         
 class Consumer(MessageQueue):
-    def __init__(self, kafka_broker: str, topic_name: str, event_bus: EventBus, max_retries=3):
-        super().__init__(kafka_broker, topic_name, max_retries)
+    def __init__(self, kafka_broker: str, topics: List[str], event_bus: EventBus, max_retries=3):
+        super().__init__(kafka_broker, topics, max_retries)
         self.event_bus = event_bus
         self.is_running = False
 
     async def start(self):
         async def run_consumer():
-            logger.info(f"Starting consumer for topic {self.topic_name}")
+            logger.info(f"Starting consumer for topics: {self.topics}")
             while True:
                 try:
                     message = await asyncio.to_thread(next, self.client)
                     if message:
                         key = message.key
                         value = message.value
-                        logger.debug(f"Message partition: {message.partition}, offset: {message.offset}")
+                        topic = message.topic
+                        
+                        logger.debug(f"Message topic: {topic}, partition: {message.partition}, offset: {message.offset}")
                         if isinstance(value, str):
                             value = json.loads(value)
                         
-                        logger.info(f"callback({len(self.event_bus.subscribers)}): {', '.join([str(callback) for callback in self.event_bus.subscribers])}")
+                        subscribers = self.event_bus.get_subscribers(topic)
+                        logger.info(f"callbacks for topic {topic}({len(subscribers)}): {', '.join([str(callback) for callback in subscribers])}")
+                        
                         result = await asyncio.gather(
-                            *[callback(key, value) for callback in self.event_bus.subscribers]
+                            *[callback(key, value) for callback in subscribers]
                         )
-                        logger.debug(f"Gather completed: {result}")
+                        logger.debug(f"Gather completed for topic {topic}: {result}")
                 except Exception as e:
-                    logger.error(f"Error reading message {self.topic_name}: {e}")
+                    logger.error(f"Error reading message: {e}")
                     await asyncio.sleep(1)
         
         if not hasattr(self, '_consumer_task'):
             self._consumer_task = asyncio.create_task(run_consumer())
     
-    async def stop(self, topic: str):
+    async def stop(self):
         if hasattr(self, '_consumer_task'):
             self._consumer_task.cancel()
             try:
@@ -130,36 +145,20 @@ class EventManager:
             cls._instance = super(EventManager, cls).__new__(cls)
         return cls._instance
 
-    def __init__(self, kafka_broker: str, topic_name: str, max_retries=3):
-        if not hasattr(self, 'event_buses'):
-            self.event_buses = {}
-        if not hasattr(self, 'consumers'):
-            self.consumers = {}
-            self.consumer_tasks = {}
-        
-        if topic_name not in self.event_buses:
-            self.event_buses[topic_name] = EventBus()
-        self.consumers[topic_name] = Consumer(kafka_broker, topic_name, self.event_buses[topic_name], max_retries)
+    def __init__(self, kafka_broker: str, topics: List[str], max_retries=3):
+        if not hasattr(self, 'initialized'):
+            self.event_bus = EventBus()
+            self.consumer = Consumer(kafka_broker, topics, self.event_bus, max_retries)
+            self.initialized = True
 
-    async def start(self, topic_name: str):
-        await self.consumers[topic_name].start()
+    async def start(self):
+        await self.consumer.start()
 
-    async def start_all(self):
-        for topic_name in self.consumers:
-            await self.start(topic_name)
-
-    async def stop(self, topic_name: str):
-        if topic_name in self.consumers:
-            await self.consumers[topic_name].stop(topic_name)
-            if topic_name in self.consumer_tasks:
-                await self.consumer_tasks[topic_name]
-
-    async def stop_all(self):
-        for topic_name in list(self.consumers.keys()):
-            await self.stop(topic_name)
+    async def stop(self):
+        await self.consumer.stop()
 
     def subscribe(self, callback: Callable, topic_name: str) -> int:
-        return self.event_buses[topic_name].subscribe(callback)
+        return self.event_bus.subscribe(callback, topic_name)
 
     def unsubscribe(self, subscriber_id: int, topic_name: str) -> bool:
-        return self.event_buses[topic_name].unsubscribe(subscriber_id)
+        return self.event_bus.unsubscribe(subscriber_id, topic_name)
