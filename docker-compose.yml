@@ -11,6 +11,17 @@ services:
       - KAFKA_BROKERS=${KAFKA_BROKERS}
       - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
       - LOG_DIR=${LOG_DIR}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - ./log:/var/log/alert
     restart: always
+    networks:
+      - yamong_network
+
+networks:
+  yamong_network:
+    external: true
