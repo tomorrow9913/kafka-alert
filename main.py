@@ -25,9 +25,9 @@ async def main():
     
     
     logger.info("Subscribing to callbacks")
+    event_manager = EventManager(kafka_brokers, list(callbacks.keys()))
+    
     for topic in callbacks.keys():
-        event_manager = EventManager(kafka_brokers, topic)
-        
         callbacks[topic].extend(all_topic_sub_callbacks)
         for callback in callbacks[topic]:           
             logger.info(f"Subscribing {callback.name} to {topic} topic-{callback.func}")
@@ -35,7 +35,7 @@ async def main():
     
     try:
         logger.info("Starting event manager")
-        await event_manager.start(topic)
+        await event_manager.start()
         while True:
             await asyncio.sleep(1)
     except KeyboardInterrupt:
@@ -43,7 +43,7 @@ async def main():
     finally:
         logger.info("stop event manager")
         if event_manager:
-            await event_manager.stop(topic)
+            await event_manager.stop()
 
 if __name__ == "__main__":
     try:
