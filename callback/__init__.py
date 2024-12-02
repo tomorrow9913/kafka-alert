@@ -30,7 +30,6 @@ for dir_path in [d for d in base_path.iterdir() if d.is_dir() and d.name != '__p
       if alert_disable:
          continue
       
-
       callbacks[dir_path.name].append(Callback(
          name=file_path.stem,
          func=module.callback,
