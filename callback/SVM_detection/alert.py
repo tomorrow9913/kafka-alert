@@ -3,6 +3,8 @@ from discordwebhook import Discord
 from datetime import datetime, timezone
 
 from utils.logger import setup_logging
+from database.database import get_db
+from database import models
 
 logger = setup_logging(__name__)
 
@@ -10,6 +12,38 @@ alert = None
 
 async def callback(key: str, value :dict) -> None:
     global alert
+    try: 
+        db = next(get_db())
+        try:
+            print(f"data {value['container_name']}")
+            container_query = (
+                db.query(models.InternalContainerId)
+                .join(
+                    models.Container,
+                    models.Container.id == models.InternalContainerId.container_idx
+                ).join(
+                    models.Server,
+                    models.Container.host_server == models.Server.id
+                )
+                .filter(
+                    models.InternalContainerId.container_id == value['container_name']
+                )
+                .first()
+            )
+
+            container_data = None
+            if container_query:
+                container_data = {
+                    "name": container_query.container.name,
+                    "image": container_query.image,
+                    "host_name": container_query.server.name
+                }
+                
+        finally:
+            db.close()
+    except Exception as e:
+        print(f"Error Sending Alert: {str(e)}")
+    
     if alert is None:
         webhook_url = os.getenv("DISCORD_WEBHOOK_URL")
         if webhook_url is None:
@@ -36,6 +70,11 @@ class Alert:
                     "title": "SVM Detection Alert",
                     "description": f"컨테이너에서 이상 로그가 감지되었습니다. SVM Detection Alert System에서 알립니다.",
                     "fields": [
+                        {
+                        "name": "🏠 Container Name"
+                        "value": str(container_data['host_name'] + "-" + str(container_data['name'])),
+                        "inline": False
+                        },
                         {
                         "name": "📦 Container ID",
                         "value": str(data['container_name']),
