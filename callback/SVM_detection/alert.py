@@ -71,8 +71,8 @@ class Alert:
                     "description": f"컨테이너에서 이상 로그가 감지되었습니다. SVM Detection Alert System에서 알립니다.",
                     "fields": [
                         {
-                        "name": "🏠 Container Name"
-                        "value": str(container_data['host_name']) + "-" + str(container_data['name']),
+                        "name": "🏠 Container Name",
+                        "value": f"{container_data['host_name']}-{container_data['name']}",
                         "inline": False
                         },
                         {
