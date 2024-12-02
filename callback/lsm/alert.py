@@ -9,16 +9,13 @@ from database import models
 logger = setup_logging(__name__)
 
 alert = None
-
-
 async def callback(key: str, value :dict) -> None:
     global alert
     try: 
         db = next(get_db())
         try:
-            print(f"data {value['container_id']['mnt_ns']}, {value['container_id']['pid_ns']}, {value['cgroup_id']}")
             container_query = (
-                db.query(models.InternalContainerId)
+                db.query(models.InternalContainerId, models.Container)
                 .join(
                     models.Container,
                     models.Container.id == models.InternalContainerId.container_idx
@@ -33,22 +30,22 @@ async def callback(key: str, value :dict) -> None:
             container_data = None
             if container_query:
                 container_data = {
-                    "name": container_query.container.name,
-                    "image": container_query.image
+                    "name": container_query.Container.name,
+                    "image": container_query.InternalContainerId.image
                 }
-                
+            
+            if alert is None:
+                webhook_url = os.getenv("DISCORD_WEBHOOK_URL")
+                if webhook_url is None:
+                    logger.debug("No Discord webhook URL configured")       
+                    return
+                alert = Alert(webhook_url, container_data)
+            alert.send_alert(value)
         finally:
             db.close()
     except Exception as e:
         print(f"Error Sending Alert: {str(e)}")
     
-    if alert is None:
-        webhook_url = os.getenv("DISCORD_WEBHOOK_URL")
-        if webhook_url is None:
-            logger.debug("No Discord webhook URL configured")       
-            return
-        alert = Alert(webhook_url)
-    alert.send_alert(value)
 
 class Alert:
     def __init__(self, webhook_url: str):
