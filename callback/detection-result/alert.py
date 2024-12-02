@@ -25,28 +25,31 @@ class Alert:
     def send_alert(self, data: dict):
         try:
             # 데이터 검증
-            if not all(key in data for key in ['pid', 'timestamp', 'detection_time', 'detection_info']):
+            if not all(key in data for key in ['container_name', 'pid', 'timestamp', 'detection_time', 'detection_info']):
                 raise ValueError("Missing required fields in data")
             
             fields = [
                         {
+                        "name": "📦 Container",
+                        "value": data['container_name'],
+                        "inline": True
+                        },
+                        {
                         "name": "🚨 PID",
-                        "value": str(data['pid']),
+                        "value": data['pid'],
                         "inline": True
                         },
                         {
                         "name": "⏰ Called At",
-                        # "value": datetime.strptime(data['timestamp'], "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=timezone.utc).isoformat(),
                         "value": data['timestamp'],
                         },
                         {
                         "name": "⏰ Detected At",
-                        # "value": datetime.strptime(data['detection_time'], "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=timezone.utc).isoformat(),
                         "value": data['detection_time'],
                         },
                         {
                         "name": "🔍 Detection Info",
-                        "value": "-"*10,
+                        "value": "-"*20,
                         }
                     ]
             for key, value in data['detection_info'].items():
