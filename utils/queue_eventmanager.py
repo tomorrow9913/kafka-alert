@@ -122,6 +122,8 @@ class Consumer(MessageQueue):
                         )
                         logger.debug(f"Gather completed for topic {topic}: {result}")
                 except Exception as e:
+                    import traceback
+                    logger.error(traceback.format_exc())
                     logger.error(f"Error reading message: {e}")
                     await asyncio.sleep(1)
         

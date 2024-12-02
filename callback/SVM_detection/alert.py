@@ -7,6 +7,7 @@ from utils.logger import setup_logging
 logger = setup_logging(__name__)
 
 alert = None
+
 async def callback(key: str, value :dict) -> None:
     global alert
     if alert is None:
@@ -56,7 +57,7 @@ class Alert:
                         "inline": True
                         }
                     ],
-                    "color": 0xFF0000 if ret_val == -1 else 0x00FF00,  
+                    "color": 0xFF0000,  
                     "footer": {
                         "text": "SVM Detection Alert System",
                         "icon_url": "https://avatars.githubusercontent.com/u/187281017?v=4"
