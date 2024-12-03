@@ -9,7 +9,7 @@ from database import models
 logger = setup_logging(__name__)
 
 alert = None
-async def callback(key: str, value :dict) -> None:
+async def callback(key: str, value: dict) -> None:
     global alert
     try: 
         db = next(get_db())
@@ -21,6 +21,7 @@ async def callback(key: str, value :dict) -> None:
                     models.Container.id == models.InternalContainerId.container_idx
                 )
                 .filter(
+                    models.InternalContainerId.container_idx == models.Container.id,
                     models.InternalContainerId.mnt_id == value['container_id']['mnt_ns'],
                     models.InternalContainerId.pid_id == value['container_id']['pid_ns']
                 )
