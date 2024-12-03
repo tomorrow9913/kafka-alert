@@ -40,8 +40,8 @@ async def callback(key: str, value: dict) -> None:
                 if webhook_url is None:
                     logger.debug("No Discord webhook URL configured")       
                     return
-                alert = Alert(webhook_url, container_data)
-            alert.send_alert(value)
+                alert = Alert(webhook_url)
+            alert.send_alert(value, container_data)
         except Exception as e:
             import traceback
             logger.error(f"Error sending alert: {str(e)}")
