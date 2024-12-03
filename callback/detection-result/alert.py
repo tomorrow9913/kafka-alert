@@ -8,7 +8,6 @@ from utils.logger import setup_logging
 logger = setup_logging(__name__)
 
 alert = None
-
 async def callback(key: str, value :dict) -> None:
     global alert
     try: 
@@ -102,7 +101,8 @@ class Alert:
 
                 embeds=[{
                     "title": "Suspicious Process Detection",
-                    "description": f"Detected a suspicious process with PID {data['pid']} at {data['detection_time']}",
+                    "description": f"{data['detection_time']}에 {container_data['host_name']} 호스트의
+                                     {container_data['name']} 컨테이너에서 이상 프로세스가 탐지되었습니다. PID: {data['pid']}",
                     "fields": fields,
                     "footer": {
                         "text": "Process Monitoring Security Alert System",

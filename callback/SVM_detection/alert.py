@@ -1,7 +1,6 @@
 import os
 from discordwebhook import Discord
-from datetime import datetime, timezone
-
+from datetime import datetime
 from utils.logger import setup_logging
 from database.database import get_db
 from database import models
@@ -9,7 +8,6 @@ from database import models
 logger = setup_logging(__name__)
 
 alert = None
-
 async def callback(key: str, value :dict) -> None:
     global alert
     try: 
@@ -66,7 +64,7 @@ class Alert:
                 avatar_url="https://t3.ftcdn.net/jpg/01/93/90/82/360_F_193908219_ak4aB1PzlhizUVGLOVowzHICc3tl6WeX.jpg",
                 embeds=[{
                     "title": "SVM Detection Alert",
-                    "description": f"컨테이너에서 이상 로그가 감지되었습니다. SVM Detection Alert System에서 알립니다.",
+                    "description": "컨테이너에서 이상 로그가 감지되었습니다. SVM Detection Alert System에서 알립니다.",
                     "fields": [
                         {
                         "name": "🏠 Container Name",
@@ -79,7 +77,7 @@ class Alert:
                         "inline": False
                         },
                         {
-                        "name": "⏰ TimeStamp",
+                        "name": "⏰ Called At",
                         "value": str(data['timestamp']),
                         "inline": True
                         },
