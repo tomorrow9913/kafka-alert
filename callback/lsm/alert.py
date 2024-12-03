@@ -42,6 +42,10 @@ async def callback(key: str, value: dict) -> None:
                     return
                 alert = Alert(webhook_url, container_data)
             alert.send_alert(value)
+        except Exception as e:
+            import traceback
+            logger.error(f"Error sending alert: {str(e)}")
+            logger.error(traceback.format_exc())
         finally:
             db.close()
     except Exception as e:
