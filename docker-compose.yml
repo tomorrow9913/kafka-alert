@@ -1,7 +1,7 @@
 version: '0.0.1'
 
 services:
-  kafka-connect:
+  alert_server:
     image: registry.yamong.dev/alert_server:main
     build:
       context: .
@@ -16,6 +16,8 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - KAFKA_CONSUMER_TIMEOUT_MS=${KAFKA_CONSUMER_TIMEOUT_MS}
+      - KAFKA_CONSUMER_MAX_RECORDS=${KAFKA_CONSUMER_MAX_RECORDS}
     volumes:
       - ./log:/var/log/alert
     restart: always

@@ -56,19 +56,19 @@ class Alert:
     def send_alert(self, data: dict, container_data: dict = None):
         try:
             # 데이터 검증
-            if not all(key in data for key in ['timestamp', 'container_name', 'anomalies_detected', 'total_logs_analyzed']):
+            if not all(key in data for key in ['container_name', 'anomalies_detected', 'total_logs_analyzed', 'called_at', 'detected_at']):
                 raise ValueError("Missing required fields in data")
 
             self.client.post(
-                username="SVM Alert",
+                username="MLP Alert",
                 avatar_url="https://t3.ftcdn.net/jpg/01/93/90/82/360_F_193908219_ak4aB1PzlhizUVGLOVowzHICc3tl6WeX.jpg",
                 embeds=[{
-                    "title": "SVM Detection Alert",
-                    "description": "컨테이너에서 이상 로그가 감지되었습니다. SVM Detection Alert System에서 알립니다.",
+                    "title": "MLP Detection Alert",
+                    "description": "컨테이너에서 이상 로그가 감지되었습니다. MLP Detection Alert System에서 알립니다.",
                     "fields": [
                         {
                         "name": "🏠 Container Name",
-                        "value": f"{container_data['host_name']}-{container_data['name']}",
+                        "value": f"[{container_data['host_name']}] {container_data['name']}",
                         "inline": False
                         },
                         {
@@ -77,24 +77,33 @@ class Alert:
                         "inline": False
                         },
                         {
-                        "name": "⏰ Called At",
-                        "value": str(data['timestamp']),
+                        "name": "⏰ Detected At",
+                        "value": str(data['detected_at']),
                         "inline": True
                         },
                         {
-                        "name": "🔍 Total logs analyzedrce",
+                        "name": "⏰ Called At",
+                        "value": str(data['called_at']),
+                        "inline": True
+                        },
+                        {
+                        "name": "📜 Analyze Report",
+                        "value": "-"*20,
+                        },
+                        {
+                        "name": "🔍 Total Logs Analyze",
                         "value": str(data["total_logs_analyzed"]),
                         "inline": True
                         },
                         {
-                        "name": "🚨 Anomalies detected",
+                        "name": "🚨 Anomalies Detected",
                         "value": str(data["anomalies_detected"]),
                         "inline": True
                         }
                     ],
                     "color": 0xFF0000,  
                     "footer": {
-                        "text": "SVM Detection Alert System",
+                        "text": "MLP Detection Alert System",
                         "icon_url": "https://avatars.githubusercontent.com/u/187281017?v=4"
                     },
                     "timestamp": datetime.now().isoformat()

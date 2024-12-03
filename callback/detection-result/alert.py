@@ -63,11 +63,11 @@ class Alert:
             fields = [
                         {
                         "name": "🏠 Container Name",
-                        "value": f"{container_data['host_name']}-{container_data['name']}",
+                        "value": f"[{container_data['host_name']}] {container_data['name']}",
                         "inline": False
                         },
                         {
-                        "name": "📦 Container",
+                        "name": "📦 Container ID",
                         "value": data['container_name'],
                         "inline": True
                         },
@@ -85,7 +85,7 @@ class Alert:
                         "value": data['detection_time'],
                         },
                         {
-                        "name": "🔍 Detection Info",
+                        "name": "📜 Detection Info",
                         "value": "-"*20,
                         }
                     ]
@@ -101,9 +101,9 @@ class Alert:
 
                 embeds=[{
                     "title": "Suspicious Process Detection",
-                    "description": f"{data['detection_time']}에 {container_data['host_name']} 호스트의
-                                     {container_data['name']} 컨테이너에서 이상 프로세스가 탐지되었습니다. PID: {data['pid']}",
+                    "description": "컨테이너에서 이상 로그가 감지되었습니다. Process Monitoring Security Alert System에서 알립니다.",
                     "fields": fields,
+                    "color": 0xFF0000, 
                     "footer": {
                         "text": "Process Monitoring Security Alert System",
                         "icon_url": "https://avatars.githubusercontent.com/u/187281017?v=4"
