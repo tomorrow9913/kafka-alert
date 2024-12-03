@@ -107,8 +107,8 @@ def _handle_containers(db: Session, server_id: int, containers: list[dict]):
 def _create_container(db: Session, server_id: int, container):
     container_info = models.Container(
         host_server=server_id,
-        runtime=container.runtime,
-        name=container.container_name
+        runtime=container["runtime"],
+        name=container["container_name"]
     )
     db.add(container_info)
     db.flush()
