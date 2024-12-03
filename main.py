@@ -29,9 +29,8 @@ async def main():
     for topic in callbacks.keys():
         callbacks[topic].extend(all_topic_sub_callbacks)
         for callback in callbacks[topic]:           
-            logger.info(f"Subscribing {callback.name}-{callback.func} to {topic} topic")
+            logger.info(f"Subscribing [{topic}] {callback.name}-{callback.func}")
             event_manager.subscribe(callback.func, topic)
-    
     try:
         logger.info("Starting event manager")
         await event_manager.start()
