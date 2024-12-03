@@ -20,6 +20,7 @@ logger.info(f"Loading callbacks from {base_path}")
 for dir_path in [d for d in base_path.iterdir() if d.is_dir() and d.name != '__pycache__']:
    callbacks[dir_path.name] = []
    
+   logger.info(f"Loading callbacks from {dir_path}")
    # 각 디렉토리 내 .py 파일 처리
    for file_path in [f for f in dir_path.iterdir() if f.suffix == '.py' and f.name != '__init__.py']:
       module = __import__(f'callback.{dir_path.name}.{file_path.stem}', fromlist=['callback', "Z-INDEX", "ALERT_DISABLE"])
