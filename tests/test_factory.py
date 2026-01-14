@@ -76,3 +76,24 @@ async def test_process_invalid_provider(factory_reset):
     
     # Verify renderer not called
     factory.renderer.render.assert_not_called()
+
+@pytest.mark.asyncio
+async def test_process_template_content(factory_reset, mocker):
+    factory = AlertFactory()
+    factory.renderer = MagicMock()
+    factory.renderer.render_from_string.return_value = {"content": "direct string message"}
+    
+    mock_discord = AsyncMock()
+    factory.providers["discord"] = mock_discord
+    
+    payload = {
+        "provider": "discord",
+        "template_content": '{"content": "direct string message"}',
+        "destination": "http://webhook",
+        "data": {}
+    }
+    
+    await factory.process(payload)
+    
+    factory.renderer.render_from_string.assert_called_once()
+    mock_discord.send.assert_called_once()

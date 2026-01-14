@@ -36,13 +36,14 @@ class AlertFactory:
         Process an alert message:
         1. Validate payload.
         2. Select provider.
-        3. Render template.
+        3. Render template (from file or string).
         4. Send message.
         """
         logger.debug(f"Processing message: {message}")
         
         provider_name = message.get("provider")
         template_name = message.get("template")
+        template_content = message.get("template_content")
         data = message.get("data", {})
         destination = message.get("destination")
         
@@ -66,21 +67,25 @@ class AlertFactory:
             logger.error(f"No destination (URL/Address) found for provider '{provider_name}'.")
             return
 
-        # Resolve Template
-        if not template_name:
-            logger.error("Message missing 'template' field.")
-            return
-            
-        full_template_name = template_name
-        if not full_template_name.endswith('.j2'):
-            if provider_name == 'discord':
-                full_template_name += '.json.j2'
-            elif provider_name == 'email':
-                full_template_name += '.html.j2'
-            # Add more defaults if needed
-
         try:
-            rendered_payload = self.renderer.render(full_template_name, data)
+            # Resolve Template & Render
+            if template_content:
+                # Direct UI structure rendering
+                is_json = provider_name in ["discord", "slack"]
+                rendered_payload = self.renderer.render_from_string(template_content, data, is_json=is_json)
+            elif template_name:
+                # File-based template rendering
+                full_template_name = template_name
+                if not full_template_name.endswith('.j2'):
+                    if provider_name == 'discord':
+                        full_template_name += '.json.j2'
+                    elif provider_name == 'email':
+                        full_template_name += '.html.j2'
+                rendered_payload = self.renderer.render(full_template_name, data)
+            else:
+                logger.error("Neither 'template' nor 'template_content' provided.")
+                return
+
             logger.info(f"Sending message via {provider_name} to {destination[:10]}...")
             await provider.send(destination, rendered_payload)
             

@@ -30,3 +30,13 @@ def test_render_invalid_json(renderer, temp_template_dir):
 def test_template_not_found(renderer):
     with pytest.raises(TemplateNotFound):
         renderer.render("non_existent.j2", {})
+
+def test_render_from_string_json(renderer):
+    content = '{"hello": "{{ name }}"}'
+    result = renderer.render_from_string(content, {"name": "world"}, is_json=True)
+    assert result == {"hello": "world"}
+
+def test_render_from_string_text(renderer):
+    content = "Hello {{ name }}!"
+    result = renderer.render_from_string(content, {"name": "world"}, is_json=False)
+    assert result == "Hello world!"
