@@ -1,9 +1,9 @@
 import aiohttp
 from typing import Dict, Any, Union
 from .base import BaseProvider
-from utils.logger import setup_logging
+from utils.logger import LogManager
 
-logger = setup_logging(__name__)
+logger = LogManager.get_logger(__name__)
 
 class DiscordProvider(BaseProvider):
     async def send(self, destination: str, payload: Union[Dict[str, Any], str]) -> bool:

@@ -2,9 +2,9 @@ import os
 from pathlib import Path
 from typing import NamedTuple
 
-from utils.logger import setup_logging
+from utils.logger import LogManager
 
-logger = setup_logging(__name__)
+logger = LogManager.get_logger(__name__)
 
 class Callback(NamedTuple):
    name: str

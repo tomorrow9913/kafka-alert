@@ -1,10 +1,10 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from .renderer import TemplateRenderer
 from .providers.discord import DiscordProvider
-from utils.logger import setup_logging
+from utils.logger import LogManager
 from core.config import settings
 
-logger = setup_logging(__name__)
+logger = LogManager.get_logger(__name__)
 
 class AlertFactory:
     _instance = None
@@ -56,7 +56,7 @@ class AlertFactory:
         if not destination:
             # Simple Env fallback logic for prototype
             if provider_name == "discord":
-                destination = settings.discord_webhook_url
+                destination = settings.DISCORD_WEBHOOK_URL
         
         if not destination:
             logger.error(f"No destination (URL/Address) found for provider '{provider_name}'.")

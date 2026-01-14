@@ -1,10 +1,9 @@
 import json
-import os
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound, TemplateError
 from typing import Dict, Any, Union
-from utils.logger import setup_logging
+from utils.logger import LogManager
 
-logger = setup_logging(__name__)
+logger = LogManager.get_logger(__name__)
 
 class TemplateRenderer:
     def __init__(self, template_dir: str = "templates"):
