@@ -1,6 +1,10 @@
-from typing import Dict, Any
+import json
+from typing import Dict, Any, Optional
+
 from .renderer import TemplateRenderer
 from .providers.discord import DiscordProvider
+from .providers.slack import SlackProvider
+from .providers.email import EmailProvider
 from utils.logger import LogManager
 from core.config import settings
 
@@ -22,8 +26,8 @@ class AlertFactory:
         self.renderer = TemplateRenderer()
         self.providers = {
             "discord": DiscordProvider(),
-            # "slack": SlackProvider(), # To be implemented
-            # "email": EmailProvider()  # To be implemented
+            "slack": SlackProvider(),
+            "email": EmailProvider()
         }
         self.initialized = True
     
@@ -82,6 +86,36 @@ class AlertFactory:
             
         except Exception as e:
             logger.error(f"Error in AlertFactory process: {e}")
+            logger.info("Attempting to send fallback notification...")
+            
+            try:
+                fallback_payload = self._create_fallback_payload(provider_name, e, data)
+                if fallback_payload:
+                    await provider.send(destination, fallback_payload)
+                else:
+                    logger.warning(f"No fallback payload created for provider {provider_name}")
+            except Exception as fallback_error:
+                logger.error(f"Failed to send fallback notification: {fallback_error}")
+
+    def _create_fallback_payload(self, provider: str, error: Exception, data: Any) -> Any:
+        """
+        Generates a generic error message payload when rendering fails.
+        """
+        error_msg = (
+            f"⚠️ **Alert Rendering Failed**\n"
+            f"Error: `{str(error)}`\n"
+            f"Raw Data:\n```json\n{json.dumps(data, indent=2, default=str)}
+```"
+        )
+
+        if provider == "discord":
+            return {"content": error_msg}
+        elif provider == "slack":
+            return {"text": error_msg}
+        elif provider == "email":
+            return f"Subject: [Error] Alert Rendering Failed\n\n{error_msg}"
+        
+        return None
 
 # Global instance
 factory = AlertFactory()
