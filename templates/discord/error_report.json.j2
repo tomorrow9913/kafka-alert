@@ -1,0 +1,16 @@
+{
+  "embeds": [{
+    "title": "🚨 Error: {{ service }}",
+    "description": "An error occurred in the service.",
+    "fields": [
+      {% for err in errors %}
+      {
+        "name": "Code: {{ err.code }}",
+        "value": "{{ err.msg }}",
+        "inline": true
+      }{{ "," if not loop.last }} 
+      {% endfor %}
+    ],
+    "footer": { "text": "{{ timestamp }}" }
+  }]
+}
