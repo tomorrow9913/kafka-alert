@@ -113,7 +113,10 @@ class AlertFactory:
         elif provider == "slack":
             return {"text": error_msg}
         elif provider == "email":
-            return f"Subject: [Error] Alert Rendering Failed\n\n{error_msg}"
+            return {
+                "subject": "[Error] Alert Rendering Failed",
+                "body": error_msg
+            }
         
         return None
 
