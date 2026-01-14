@@ -30,6 +30,15 @@ KAFKA_MAX_CONCURRENT_TASKS=100
 
 # Discord Provider
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
+
+# Email (SMTP) Provider
+EMAIL_CONFIG__SMTP_HOST=smtp.gmail.com
+EMAIL_CONFIG__SMTP_PORT=587
+EMAIL_CONFIG__SMTP_USER=your_email@gmail.com
+EMAIL_CONFIG__SMTP_PASSWORD=your_app_password
+EMAIL_CONFIG__USE_TLS=True
+EMAIL_CONFIG__DEFAULT_FROM_EMAIL=alert-system@example.com
+EMAIL_CONFIG__DEFAULT_TO_EMAIL=admin@example.com
 ```
 
 ## How To Execute
@@ -172,3 +181,22 @@ async def callback(msg: ConsumerRecord):
 
 > [!TIP]
 > `discord`나 `slack` 프로바이더 사용 시 `template_content`는 유효한 JSON 문자열 형태여야 합니다. `email` 프로바이더는 일반 텍스트나 HTML 문자열을 지원합니다.
+
+### 3. Email 전송 특화 (Subject & Body)
+Email 프로바이더는 제목(Subject)이 필수입니다. 아래와 같이 `data` 필드 내에 `subject`를 포함하는 것을 권장합니다.
+
+```json
+{
+  "provider": "email",
+  "template": "email/alert.html.j2",
+  "destination": "admin@example.com",
+  "data": {
+    "subject": "[Emergency] DB Connection Timeout",
+    "service": "Payment-API",
+    "message": "Critical failure in production DB."
+  }
+}
+```
+
+> [!NOTE]
+> `destination`을 생략할 경우 설정된 `EMAIL_CONFIG__DEFAULT_TO_EMAIL` 주소로 발송됩니다.
