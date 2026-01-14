@@ -23,7 +23,6 @@ class KafkaConsumerConfig(BaseModel):
 class KafkaProducerConfig(BaseModel):
     """AIOKafkaProducer-specific configurations."""
     acks: str = "all"
-    retries: int = 3
     retry_backoff_ms: int = 100
     linger_ms: int = 0
 
