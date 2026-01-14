@@ -1,5 +1,5 @@
 import json
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 from .renderer import TemplateRenderer
 from .providers.discord import DiscordProvider
@@ -101,11 +101,11 @@ class AlertFactory:
         """
         Generates a generic error message payload when rendering fails.
         """
+        data_json = json.dumps(data, indent=2, default=str)
         error_msg = (
             f"⚠️ **Alert Rendering Failed**\n"
             f"Error: `{str(error)}`\n"
-            f"Raw Data:\n```json\n{json.dumps(data, indent=2, default=str)}
-```"
+            f"Raw Data:\n```json\n{data_json}\n```"
         )
 
         if provider == "discord":

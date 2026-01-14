@@ -1,6 +1,5 @@
 import pytest
-import asyncio
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 from aiokafka import ConsumerRecord
 from utils.kafka_manager import KafkaManager
 from core.config import KafkaConsumerConfig, KafkaProducerConfig

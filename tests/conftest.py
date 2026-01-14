@@ -1,5 +1,4 @@
 import pytest
-import os
 from core.renderer import TemplateRenderer
 from core.factory import AlertFactory
 

@@ -1,5 +1,4 @@
 import pytest
-import json
 from jinja2 import TemplateNotFound
 
 def test_render_json_success(renderer, temp_template_dir):

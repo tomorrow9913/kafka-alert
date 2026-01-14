@@ -2,7 +2,7 @@ import asyncio
 
 from core.config import settings
 from utils.logger import LogManager
-from utils.kafka_manager import init_kafka_manager, get_kafka_manager
+from utils.kafka_manager import init_kafka_manager
 from callback import callbacks
 
 logger = LogManager.get_logger(__name__)
