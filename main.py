@@ -34,9 +34,14 @@ async def main():
         logger.info("Starting Kafka manager...")
         await kafka_manager.start()
         
-        # Keep the application running
-        while True:
-            await asyncio.sleep(3600) # Sleep for a long time
+        # Keep the application running by waiting on the consumer task
+        if kafka_manager.consumer_task:
+            logger.info("Consumer task started. Waiting for completion...")
+            await kafka_manager.consumer_task
+        else:
+            logger.warning("No consumer task running (no topics subscribed?). Waiting indefinitely...")
+            stop_event = asyncio.Event()
+            await stop_event.wait()
             
     except (KeyboardInterrupt, asyncio.CancelledError):
         logger.info("Shutdown signal received.")

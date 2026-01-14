@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     # Kafka Configuration
     KAFKA_BROKERS: List[str] = ["localhost:9092"]
     KAFKA_CONSUMER_GROUP: str = 'alert-group'
+    KAFKA_MAX_CONCURRENT_TASKS: int = 100
     
     # Kafka Detailed Configuration
     KAFKA_CONSUMER_CONFIG: KafkaConsumerConfig = KafkaConsumerConfig()

@@ -1,111 +1,125 @@
-# Alert
+# Universal Alert Platform (Kafka Alert System v2)
 
-> 이 프로젝트는 카프카에서 수신된 메시지를 다양한 방법으로 처리할 수 있도록 합니다.
+> 이 프로젝트는 카프카(Kafka)에서 수신된 메시지를 다양한 채널(Discord, Slack, Email 등)로 동적으로 처리하고 알림을 전송하는 유연한 플랫폼입니다.
 
 > [!IMPORTANT]
-> 이 프로젝트에서는 후술할 처리 방식에 따라 `all` 이름을 가진 kafka topic을 사용할 수 없습니다.
+> `all`이라는 이름의 카프카 토픽은 내부 로직(모든 토픽 공통 처리)을 위해 예약되어 있으므로 사용할 수 없습니다.
+
+## Key Features
+- **Provider Agnostic**: 비즈니스 로직 수정 없이 설정만으로 알림 채널(Discord 등)을 변경할 수 있습니다.
+- **Template Driven**: Jinja2 템플릿 엔진을 사용하여 메시지 포맷을 자유롭게 정의할 수 있습니다.
+- **High Concurrency**: `aiokafka`와 `asyncio`를 기반으로 하며, 세마포어(Semaphore)를 통한 동시성 제어로 높은 처리량을 보장합니다.
+- **Configuration as Code**: `pydantic-settings`를 통해 환경 변수와 설정 파일을 타입 안전(Type-safe)하게 관리합니다.
+
+## Prerequisites
+- Python 3.12+
+- Docker & Docker Compose
+
+## Configuration (.env)
+프로젝트 루트에 `.env` 파일을 생성하여 설정을 관리할 수 있습니다.
+
+```env
+# Application
+APP_CONFIG__LOG_LEVEL=INFO
+APP_CONFIG__LOG_DIR=logs
+
+# Kafka
+KAFKA_BROKERS=["localhost:9092"]
+KAFKA_CONSUMER_GROUP=alert-group
+KAFKA_MAX_CONCURRENT_TASKS=100
+
+# Discord Provider
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
+```
 
 ## How To Execute
+
+### Using Docker Compose
 ```bash
-docker compose pull # or docker compose up --build
-docker compose up   # if you exec docker compuse up --build you can skip this
+docker compose up --build
 ```
 
-## Directory Struct
+### Local Development
+```bash
+# Install dependencies (using uv recommended)
+uv pip install -r requirements.txt
+
+# Run
+python main.py
+```
+
+## Directory Structure
 ```bash
 Alert
-├── README.md                   # 설명을 위한 Readme 파일
-├── requirements.txt            # 종속성 관리를 위한 파일
-├── docker-compose.yml
-├── dockerfile
-├── Jenkinsfile                 # CICD를 위한 파일
-├── main.py                     # 실행 파일
-├── callback                    # callback 함수가 정의된 폴더
-│   ├── __init__.py             # 무엇을 하려는지 정확히 모른다면 이 파일을 수정하지 마세요.
-│   ├── all                     # 이곳에 파일을 등록하는 경우 정의된 모든 폴더에 적용됩니다.
-│   │   └── example.py
-│   └── topic_name              # 폴더명을 자유롭게 정의 가능(토픽 카프카 토픽 이름)
-│       └── alert.py
-├── log                         # 이곳에 실행 중 발생한 로그들이 저장됩니다.
-│   └── monitor.log
-└── utils
-    ├── logger.py               # 로그 설정을 위한 파일
-    └── queue_eventmanager.py   # 카프카와 관련된 파일
+├── core/                   # 핵심 로직 (설정, 팩토리, 렌더러, 프로바이더)
+│   ├── config.py           # Pydantic 기반 설정 관리
+│   ├── factory.py          # 알림 처리 및 라우팅 로직
+│   ├── renderer.py         # Jinja2 템플릿 렌더링 엔진
+│   └── providers/          # 알림 채널 구현체 (Discord 등)
+├── templates/              # 알림 메시지 템플릿 (JSON/HTML)
+│   └── discord/
+│       └── error_report.json.j2
+├── callback/               # 비즈니스 로직 (토픽별 처리 핸들러)
+│   ├── __init__.py         # 동적 모듈 로딩 로직
+│   ├── all/                # 모든 토픽에 적용될 공통 핸들러
+│   └── {topic_name}/       # 특정 토픽 전용 핸들러
+├── utils/
+│   ├── kafka_manager.py    # aiokafka 기반 Consumer/Producer 관리
+│   └── logger.py           # loguru 기반 로깅 시스템
+├── main.py                 # 애플리케이션 진입점
+└── requirements.txt
 ```
 
-## How To Use
-이 프로젝트 구조에서 새로운 처리를 추가하기 위해서는 두 가지 방법이 존재합니다.
+## How To Use (Callback System)
 
-1. 모든 토픽에 공통되는 처리 로직 추가
-2. 특정 토픽에 공통되는 처리 로직 추가
+새로운 알림 처리 로직을 추가하려면 `callback` 폴더에 Python 파일을 생성하면 됩니다.
 
-두 가지 방식 모두 `callback` 이라는 이름을 가진 함수를 생성하는 방식으로 동일하게 추가할 수 있습니다.
+### Callback Function Signature
+콜백 함수는 `aiokafka.ConsumerRecord` 객체를 인자로 받으며, `async` 함수여야 합니다.
 
-`callback` 함수는 두 가지 매개변수를 받으며 리턴형은 존재하지 않습니다.
+```python
+from aiokafka import ConsumerRecord
+from core.factory import factory
+from utils.logger import LogManager
 
-`callback` 함수는 카프카에서 메시지가 수신될 때 마다 카프카에서 전송된 메시지 key, value를 매개변수로 전달하여 해당 함수를 실행합니다.
+logger = LogManager.get_logger(__name__)
 
-예시 함수는 다음과 같습니다.
+# 정렬 순서 (낮을수록 먼저 실행)
+Z_INDEX = 0
+# 비활성화 여부
+ALERT_DISABLE = False
 
-```py
-async def callback(key, value: dict):
-    print(f"key: {key}, value: {value}")
-```
-
-### Add all topic processing logic
-만약 등록된 모든 토픽에 대해 동일한 처리를 하고 싶다면 `callback` **폴더**에 존재하는 `all` 폴더에 상기 함수가 포함된 python 파일을 추가하는 방식으로 처리 할 수 있습니다.
-
-이에 `all` 이름은 해당 처리를 위해 예약 되었으므로 all 이름을 가진 토픽에 대해서는 이 프로젝트는 처리 할 수 없습니다.
-
-### Add specific topic processing logic 
-1. 특정 토픽에 대해 처리를 추가하고 싶다면 `callback` **폴더**에 원하는 토픽 이름으로 폴더를 생성하고, 이곳에 상기 함수가 포함된 python 파일을 추가하는 방식으로 처리할 수 있습니다.
-2. 만약 해당 토픽이 다른 로직 없이 공통 처리만 수행하고자 한다면, 폴더만 생성하여 등록 할 수 있습니다.
-
-## Etc.
-함수가 호출되는 순서는 토픽 처리가 먼저 수행된 뒤 이후 공통 처리 로직이 수행됩니다. 해당 부분을 수정하고 싶은 경우 `main.py`의 하기 된 부분을 수정하세요
-```py
-for topic in callbacks.keys():
-    event_manager = EventManager(kafka_brokers, topic)
+async def callback(msg: ConsumerRecord):
+    """
+    msg.value는 이미 JSON으로 역직렬화된 상태(dict)이거나, 
+    실패 시 bytes 그대로일 수 있습니다.
+    """
+    logger.info(f"Received message on topic {msg.topic}")
     
-    callbacks[topic].extend(all_topic_sub_callbacks) # 이곳을 수정하세요
-    for callback in callbacks[topic]:           
-        logger.info(f"Subscribing {callback.name} to {topic} topic")
-        event_manager.subscribe(callback.func, topic)
+    if isinstance(msg.value, dict):
+        # AlertFactory를 통해 템플릿 렌더링 및 전송
+        await factory.process(msg.value)
 ```
 
-만약 특정 토픽에 대한 함수가 호출되는 순서를 조절하고 싶은 경우 `callback` 함수 정의와 함께 `Z_INDEX`를 설정할 수 있습니다.
+### 1. 모든 토픽 공통 처리
+`callback/all/` 폴더에 Python 파일을 추가하세요.
 
-정렬 방식을 변경하고 싶은 경우 `callback` **폴더**에 있는 `__init__.py`에서 정렬방식을 변경할 수 있습니다.
+### 2. 특정 토픽 전용 처리
+`callback/{topic_name}/` 폴더를 생성하고 Python 파일을 추가하세요. Kafka 클러스터에 해당 토픽이 존재해야 구독이 시작됩니다.
 
-만약 특정 함수를 비활성화 하고 싶은 경우 `callback` 함수 정의와 함께 `ALERT_DISABLE`을 True로 설정하여 비활성화 할 수 있습니다.
-
-만약 value가 json 임이 보장되지 않는 경우, 또는 바이너리가 전달될 수 있는 경우 아래를 수정하세요.
-`utils` 폴더의 `queue_eventmanager.py`를 열어 `MessageQueue` class에 존재하는 `_create_consumer` 함수를 확인합니다.
-
-```py
-def _create_consumer(self):
-    for attempt in range(self.max_retries):
-        try:
-            return KafkaConsumer(
-                self.topic_name,
-                bootstrap_servers=self.bootstrap_servers,
-                auto_offset_reset='earliest',
-                enable_auto_commit=True,
-                group_id=f'backend-{self.topic_name}-group',
-                value_deserializer=lambda x: json.loads(x.decode('utf-8')), # 이곳을 수정합니다
-                key_deserializer=lambda x: x.decode('utf-8'), # 바이너리 형식이 올 수 있는 경우 이곳을 수정합니다.
-                session_timeout_ms=90000,  
-                heartbeat_interval_ms=30000,
-                request_timeout_ms=95000,
-                connections_max_idle_ms=180000,
-                max_poll_interval_ms=300000,
-                api_version_auto_timeout_ms=60000,
-                security_protocol='PLAINTEXT',
-                fetch_max_wait_ms=500,
-                fetch_min_bytes=1,
-                fetch_max_bytes=52428800,
-                metadata_max_age_ms=300000,
-                reconnect_backoff_ms=5000,
-                reconnect_backoff_max_ms=10000
-            )
+## Message Protocol
+Kafka 메시지 Payload 예시:
+```json
+{
+  "provider": "discord",
+  "template": "discord/error_report",
+  "data": {
+    "service": "Payment-API",
+    "timestamp": "2024-01-14 12:00:00",
+    "errors": [
+      { "code": "500", "msg": "DB Connection Failed" }
+    ]
+  }
+}
 ```
+`core/factory.py`는 이 메시지를 받아 `templates/discord/error_report.json.j2` 템플릿을 렌더링하고 Discord로 전송합니다.

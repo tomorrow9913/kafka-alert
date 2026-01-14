@@ -1,4 +1,5 @@
 import os
+import importlib
 from pathlib import Path
 from typing import NamedTuple
 
@@ -23,7 +24,8 @@ for dir_path in [d for d in base_path.iterdir() if d.is_dir() and d.name != '__p
    logger.info(f"Loading callbacks from {dir_path}")
    # 각 디렉토리 내 .py 파일 처리
    for file_path in [f for f in dir_path.iterdir() if f.suffix == '.py' and f.name != '__init__.py']:
-      module = __import__(f'callback.{dir_path.name}.{file_path.stem}', fromlist=['callback', "Z-INDEX", "ALERT_DISABLE"])
+      module_name = f"callback.{dir_path.name}.{file_path.stem}"
+      module = importlib.import_module(module_name)
       
       alert_disable = getattr(module, 'ALERT_DISABLE', False)
       z_index = getattr(module, 'Z_INDEX', 0)

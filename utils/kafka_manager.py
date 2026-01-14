@@ -8,6 +8,7 @@ from aiokafka import AIOKafkaConsumer, AIOKafkaProducer, ConsumerRecord
 
 from utils.logger import LogManager
 from core.config import (
+    settings,
     KafkaConsumerConfig,
     KafkaProducerConfig,
 )
@@ -51,11 +52,19 @@ class KafkaManager:
         self.consumer: Optional[AIOKafkaConsumer] = None
         self._consumer_task: Optional[asyncio.Task[None]] = None
         self._callbacks: dict[str, list[MessageHandler]] = defaultdict(list)
+        
+        # Semaphore for concurrency control
+        self._semaphore = asyncio.Semaphore(settings.KAFKA_MAX_CONCURRENT_TASKS)
 
     @property
     def subscribed_topics(self) -> list[str]:
         """Returns a list of all topics that are currently slated for subscription."""
         return list(self._callbacks.keys())
+
+    @property
+    def consumer_task(self) -> Optional[asyncio.Task[None]]:
+        """Returns the background consumer task if it is running."""
+        return self._consumer_task
 
     def register_callback(self, topic: str, callback: MessageHandler):
         """Registers a message handling callback for a specific topic."""
@@ -86,10 +95,13 @@ class KafkaManager:
                     logger.debug(f"Skipping message with deserialization failure on topic '{msg.topic}'")
                     continue
 
-                logger.debug(f"Message received: Topic={msg.topic}, Partition={msg.partition}, Offset={msg.offset}, Key={msg.key}, Header={msg.headers}, Value={msg.value}")
+                logger.debug(f"Message received: Topic={msg.topic}, Partition={msg.partition}, Offset={msg.offset}")
+                
                 if msg.topic in self._callbacks:
-                    tasks = [self._execute_callback(cb, msg) for cb in self._callbacks[msg.topic]]
-                    await asyncio.gather(*tasks)
+                    for cb in self._callbacks[msg.topic]:
+                        # Acquire semaphore before creating task
+                        await self._semaphore.acquire()
+                        asyncio.create_task(self._execute_callback_safe(cb, msg))
 
         except asyncio.CancelledError:
             logger.info("Consumer task cancelled.")
@@ -98,12 +110,15 @@ class KafkaManager:
         finally:
             logger.info("Consumer task finished.")
 
-    async def _execute_callback(self, callback: MessageHandler, msg: ConsumerRecord):
-        """Safely executes a callback and logs exceptions."""
+    async def _execute_callback_safe(self, callback: MessageHandler, msg: ConsumerRecord):
+        """Safely executes a callback within the semaphore context and logs exceptions."""
         try:
             await callback(msg)
         except Exception as e:
             logger.error(f"Error executing callback '{callback.__name__}' for topic '{msg.topic}': {e}", exc_info=True)
+        finally:
+            # Always release the semaphore
+            self._semaphore.release()
 
     async def start(self):
         """Starts the Kafka producer and consumer, and runs the consumer task in the background."""
