@@ -1,5 +1,6 @@
 import pytest
-from unittest.mock import AsyncMock
+import asyncio
+from unittest.mock import AsyncMock, MagicMock
 from aiokafka import ConsumerRecord
 from utils.kafka_manager import KafkaManager
 from core.config import KafkaConsumerConfig, KafkaProducerConfig
@@ -23,10 +24,11 @@ async def test_kafka_manager_consumption(mocker):
     
     async def async_iter():
         yield record
-        # Yielding only one record then finishing iteration
         
-    mock_consumer_instance.__aiter__.return_value = async_iter()
+    mock_consumer_instance.__aiter__.side_effect = lambda: async_iter()
     mock_consumer_instance.topics = AsyncMock(return_value={"test-topic"})
+    mock_consumer_instance.subscribe = MagicMock() # aiokafka subscribe is sync
+    mock_consumer_instance.stop = AsyncMock()
     
     # Init Manager
     manager = KafkaManager(
@@ -64,6 +66,8 @@ async def test_kafka_manager_topic_filtering(mocker):
 
     # Mock available topics
     mock_consumer_instance.topics = AsyncMock(return_value={"existing-topic"})
+    mock_consumer_instance.subscribe = MagicMock()
+    mock_consumer_instance.stop = AsyncMock()
     
     manager = KafkaManager(
         bootstrap_servers=["localhost:9092"],
