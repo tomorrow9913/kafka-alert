@@ -17,6 +17,8 @@ async def main():
     kafka_manager = init_kafka_manager(
         bootstrap_servers=settings.KAFKA_BROKERS,
         consumer_group=settings.KAFKA_CONSUMER_GROUP,
+        consumer_config=settings.KAFKA_CONSUMER_CONFIG,
+        producer_config=settings.KAFKA_PRODUCER_CONFIG,
     )
 
     all_topic_sub_callbacks = callbacks.pop("all", [])

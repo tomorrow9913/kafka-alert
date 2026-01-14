@@ -11,6 +11,22 @@ class AppConfig(BaseModel):
     LOG_BACKUP_COUNT: int = 5
     ENV: str = "prod"
 
+class KafkaConsumerConfig(BaseModel):
+    """AIOKafkaConsumer-specific configurations."""
+    auto_offset_reset: str = "latest"
+    enable_auto_commit: bool = True
+    session_timeout_ms: int = 30000
+    heartbeat_interval_ms: int = 10000
+    max_poll_interval_ms: int = 300000
+    max_poll_records: int = 500
+
+class KafkaProducerConfig(BaseModel):
+    """AIOKafkaProducer-specific configurations."""
+    acks: str = "all"
+    retries: int = 3
+    retry_backoff_ms: int = 100
+    linger_ms: int = 0
+
 class Settings(BaseSettings):
     """Main settings object that aggregates all configurations."""
     APP_CONFIG: AppConfig = AppConfig()
@@ -18,6 +34,10 @@ class Settings(BaseSettings):
     # Kafka Configuration
     KAFKA_BROKERS: List[str] = ["localhost:9092"]
     KAFKA_CONSUMER_GROUP: str = 'alert-group'
+    
+    # Kafka Detailed Configuration
+    KAFKA_CONSUMER_CONFIG: KafkaConsumerConfig = KafkaConsumerConfig()
+    KAFKA_PRODUCER_CONFIG: KafkaProducerConfig = KafkaProducerConfig()
 
     # Discord Configuration (from previous setup)
     DISCORD_WEBHOOK_URL: Optional[str] = None
