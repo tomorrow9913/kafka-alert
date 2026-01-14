@@ -1,16 +1,18 @@
-FROM alpine:3.20.3
+FROM python:3.12-alpine
 
-RUN apk add --no-cache python3 py3-pip
-
-ADD ./requirements.txt /app/requirements.txt
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /app
-RUN \
-python3 -m venv .venv &&\
-source .venv/bin/activate &&\
-pip install -r requirements.txt
 
+# Install dependencies
+# Using --system to install into the system python since it's a container
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=requirements.txt,target=requirements.txt \
+    uv pip install --system -r requirements.txt
+
+# Add the rest of the application
 ADD . /app
 
-CMD ["/bin/sh", "-c", ". .venv/bin/activate && python3 main.py"]
-
+# Run the application
+CMD ["python", "main.py"]

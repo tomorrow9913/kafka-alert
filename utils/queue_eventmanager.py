@@ -1,3 +1,4 @@
+import os
 from typing import Callable, List, Dict
 import asyncio
 import json
@@ -8,6 +9,13 @@ from contextlib import contextmanager
 from utils.logger import setup_logging
 
 logger = setup_logging(__name__)
+
+# Kafka Configuration Defaults
+KAFKA_GROUP_ID = os.getenv('KAFKA_GROUP_ID', 'alert-group')
+KAFKA_SESSION_TIMEOUT_MS = int(os.getenv('KAFKA_SESSION_TIMEOUT_MS', 30000))
+KAFKA_HEARTBEAT_INTERVAL_MS = int(os.getenv('KAFKA_HEARTBEAT_INTERVAL_MS', 10000))
+KAFKA_MAX_POLL_INTERVAL_MS = int(os.getenv('KAFKA_MAX_POLL_INTERVAL_MS', 300000))
+KAFKA_AUTO_OFFSET_RESET = os.getenv('KAFKA_AUTO_OFFSET_RESET', 'earliest')
 
 class EventBus:
     def __init__(self):
@@ -50,16 +58,16 @@ class MessageQueue:
                 return KafkaConsumer(
                     *self.topics,
                     bootstrap_servers=self.bootstrap_servers,
-                    auto_offset_reset='earliest',
+                    auto_offset_reset=KAFKA_AUTO_OFFSET_RESET,
                     enable_auto_commit=True,
-                    group_id='alert-group',
-                    value_deserializer=lambda x: json.loads(x.decode('utf-8')),
+                    group_id=KAFKA_GROUP_ID,
+                    value_deserializer=lambda x: x,  # Raw bytes, handled in loop
                     key_deserializer=lambda x: x.decode('utf-8') if x else None,
-                    session_timeout_ms=30000,
-                    heartbeat_interval_ms=10000,
-                    request_timeout_ms=35000,
+                    session_timeout_ms=KAFKA_SESSION_TIMEOUT_MS,
+                    heartbeat_interval_ms=KAFKA_HEARTBEAT_INTERVAL_MS,
+                    request_timeout_ms=KAFKA_SESSION_TIMEOUT_MS + 5000,
                     connections_max_idle_ms=180000,
-                    max_poll_interval_ms=300000,
+                    max_poll_interval_ms=KAFKA_MAX_POLL_INTERVAL_MS,
                     api_version_auto_timeout_ms=60000,
                     security_protocol='PLAINTEXT',
                     fetch_max_wait_ms=500,
@@ -111,8 +119,14 @@ class Consumer(MessageQueue):
                         topic = message.topic
                         
                         logger.debug(f"Message topic: {topic}, partition: {message.partition}, offset: {message.offset}")
-                        if isinstance(value, str):
-                            value = json.loads(value)
+                        
+                        # Safe JSON Deserialization
+                        if isinstance(value, bytes):
+                            try:
+                                value = json.loads(value.decode('utf-8'))
+                            except (json.JSONDecodeError, UnicodeDecodeError) as e:
+                                logger.error(f"Failed to deserialize message value: {e}. Raw value: {value}")
+                                continue
                         
                         subscribers = self.event_bus.get_subscribers(topic)
                         logger.info(f"callbacks for topic {topic}({len(subscribers)}): {', '.join([str(callback) for callback in subscribers])}")
