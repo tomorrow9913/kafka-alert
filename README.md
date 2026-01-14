@@ -3,7 +3,7 @@
 > 이 프로젝트는 카프카(Kafka)에서 수신된 메시지를 다양한 채널(Discord, Slack, Email 등)로 동적으로 처리하고 알림을 전송하는 유연한 플랫폼입니다.
 
 > [!IMPORTANT]
-> `all`이라는 이름의 카프카 토픽은 내부 로직(모든 토픽 공통 처리)을 위해 예약되어 있으므로 사용할 수 없습니다.
+> `all`이라는 이름의 카프카 토픽은 내부 로직(모든 토픽 공통 처리)을 위해 예약되어 있으므로 **실제 Kafka 토픽 이름으로 사용할 수 없습니다.**
 
 ## Key Features
 - **Provider Agnostic**: 비즈니스 로직 수정 없이 설정만으로 알림 채널(Discord 등)을 변경할 수 있습니다.
@@ -64,8 +64,8 @@ Alert
 │       └── error_report.json.j2
 ├── callback/               # 비즈니스 로직 (토픽별 처리 핸들러)
 │   ├── __init__.py         # 동적 모듈 로딩 로직
-│   ├── all/                # 모든 토픽에 적용될 공통 핸들러
-│   └── {topic_name}/       # 특정 토픽 전용 핸들러
+│   ├── all/                # [예약] 구독 중인 모든 토픽에 적용될 공통 핸들러
+│   └── {topic_name}/       # [개별] 특정 토픽 전용 핸들러
 ├── utils/
 │   ├── kafka_manager.py    # aiokafka 기반 Consumer/Producer 관리
 │   └── logger.py           # loguru 기반 로깅 시스템
@@ -76,6 +76,37 @@ Alert
 ## How To Use (Callback System)
 
 새로운 알림 처리 로직을 추가하려면 `callback` 폴더에 Python 파일을 생성하면 됩니다.
+
+### Callback 구독 메커니즘
+서버가 시작될 때(`main.py` 실행 시점), `callback` 폴더를 스캔하여 **존재하는 폴더 이름과 일치하는 Kafka 토픽**을 구독합니다.
+- `callback/{topic_name}/` 폴더가 있으면 해당 토픽을 구독합니다.
+- `callback/all/` 폴더에 있는 로직은 **위에서 구독하기로 결정된 모든 토픽**에 추가적으로 등록됩니다.
+
+### 1. 개별 토픽 처리 (`callback/{topic_name}/`)
+특정 토픽(`payment-errors`)의 메시지만 처리하고 싶다면 `callback/payment-errors/` 폴더를 만들고 스크립트를 추가하세요.
+
+### 2. 모든 토픽 공통 처리 (`callback/all/`)
+현재 구독 중인 **모든 토픽**의 메시지에 대해 공통적으로 수행해야 할 작업(예: 로깅, 감사 추적, 이메일 백업 전송 등)이 있다면 `callback/all/` 폴더에 스크립트를 추가하세요.
+
+> [!NOTE]
+> `all`은 실제 Kafka 토픽을 구독하는 것이 아니라, 애플리케이션 내부에서 **"구독된 모든 토픽의 이벤트 루프"**에 해당 콜백을 주입하는 역할을 합니다.
+
+### 활용 예시 (Scenario)
+**요구사항:**
+- `payment` 토픽의 에러는 **Discord**로 알림을 보내고 싶다.
+- `infrastructure` 토픽의 에러는 **Slack**으로 알림을 보내고 싶다.
+- 단, **모든 종류의 에러**(`payment`, `infrastructure` 포함)는 **Email**로도 전송되어야 한다.
+
+**구현 방법:**
+1. `callback/payment/discord_handler.py`: Discord 전송 로직 작성
+2. `callback/infrastructure/slack_handler.py`: Slack 전송 로직 작성
+3. `callback/all/email_backup.py`: Email 전송 로직 작성
+
+**결과:**
+- `payment` 토픽 수신 시: `discord_handler` 실행 + `email_backup` 실행
+- `infrastructure` 토픽 수신 시: `slack_handler` 실행 + `email_backup` 실행
+
+---
 
 ### Callback Function Signature
 콜백 함수는 `aiokafka.ConsumerRecord` 객체를 인자로 받으며, `async` 함수여야 합니다.
@@ -103,12 +134,6 @@ async def callback(msg: ConsumerRecord):
         # AlertFactory를 통해 템플릿 렌더링 및 전송
         await factory.process(msg.value)
 ```
-
-### 1. 모든 토픽 공통 처리
-`callback/all/` 폴더에 Python 파일을 추가하세요.
-
-### 2. 특정 토픽 전용 처리
-`callback/{topic_name}/` 폴더를 생성하고 Python 파일을 추가하세요. Kafka 클러스터에 해당 토픽이 존재해야 구독이 시작됩니다.
 
 ## Message Protocol
 Kafka 메시지 Payload 예시:

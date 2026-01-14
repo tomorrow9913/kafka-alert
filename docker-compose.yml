@@ -27,6 +27,12 @@ services:
       KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
       # Replace CLUSTER_ID with a unique base64 UUID using "kafka-storage random-uuid" format
       CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+    healthcheck:
+      test: kafka-broker-api-versions --bootstrap-server kafka:9092 || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - alert_network
 
@@ -37,7 +43,8 @@ services:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy # Kafka가 건강할 때까지 대기
     ports:
       - "8080:8080"
     environment:
@@ -57,7 +64,8 @@ services:
       dockerfile: dockerfile
     restart: unless-stopped
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy # Kafka가 건강할 때까지 대기
     environment:
       # Application Config
       - APP_CONFIG__ENV=dev
