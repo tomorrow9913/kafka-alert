@@ -1,29 +1,84 @@
-version: '0.0.1'
+version: '3.8'
 
 services:
+  # ----------------------------------------------------------------------------
+  # Zookeeper & Kafka
+  # ----------------------------------------------------------------------------
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - alert_network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - alert_network
+
+  # ----------------------------------------------------------------------------
+  # Web UI for Kafka Management
+  # ----------------------------------------------------------------------------
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    depends_on:
+      - kafka
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    networks:
+      - alert_network
+
+  # ----------------------------------------------------------------------------
+  # Kafka Alert Application
+  # ----------------------------------------------------------------------------
   alert_server:
-    image: registry.yamong.dev/alert_server:main
+    container_name: alert_server
     build:
       context: .
       dockerfile: dockerfile
-    container_name: alert_server
+    restart: unless-stopped
+    depends_on:
+      - kafka
     environment:
-      - KAFKA_BROKERS=${KAFKA_BROKERS}
-      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
-      - LOG_DIR=${LOG_DIR}
-      - POSTGRES_HOST=${POSTGRES_HOST}
-      - POSTGRES_PORT=${POSTGRES_PORT}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - KAFKA_CONSUMER_TIMEOUT_MS=${KAFKA_CONSUMER_TIMEOUT_MS}
-      - KAFKA_CONSUMER_MAX_RECORDS=${KAFKA_CONSUMER_MAX_RECORDS}
+      # Application Config
+      - APP_CONFIG__ENV=dev
+      - APP_CONFIG__LOG_LEVEL=DEBUG
+      
+      # Kafka Config (Pointing to the internal docker network alias 'kafka')
+      - KAFKA_BROKERS=["kafka:9092"]
+      - KAFKA_CONSUMER_GROUP=alert-group-dev
+      
+      # Load other secrets from .env file (Discord Webhook, DB, etc.)
+      # Create a .env file locally based on .env.sample
+    env_file:
+      - .env
     volumes:
-      - ./log:/var/log/alert
-    restart: always
+      - ./logs:/app/logs
     networks:
-      - yamong_network
+      - alert_network
 
 networks:
-  yamong_network:
-    external: true
+  alert_network:
+    driver: bridge
