@@ -7,6 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
     "aiohttp>=3.13.3",
     "aiokafka>=0.13.0",
+    "aiosmtplib>=5.0.0",
     "apprise>=1.9.6",
     "discordwebhook>=1.0.3",
     "jinja2>=3.1.6",

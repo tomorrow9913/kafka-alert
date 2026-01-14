@@ -37,7 +37,8 @@ class AlertFactory:
         1. Validate payload.
         2. Select provider.
         3. Render template (from file or string).
-        4. Send message.
+        4. Envelope Processing (for Email).
+        5. Send message.
         """
         logger.debug(f"Processing message: {message}")
         
@@ -57,18 +58,25 @@ class AlertFactory:
 
         provider = self.providers[provider_name]
 
-        # Resolve Destination
+        # ---------------------------------------------------------
+        # Destination Fallback Logic
+        # ---------------------------------------------------------
         if not destination:
-            # Simple Env fallback logic for prototype
             if provider_name == "discord":
                 destination = settings.DISCORD_WEBHOOK_URL
+            elif provider_name == "email":
+                destination = settings.EMAIL_CONFIG.DEFAULT_TO_EMAIL
         
         if not destination:
             logger.error(f"No destination (URL/Address) found for provider '{provider_name}'.")
             return
 
         try:
-            # Resolve Template & Render
+            # ---------------------------------------------------------
+            # Rendering Logic
+            # ---------------------------------------------------------
+            rendered_payload = None
+            
             if template_content:
                 # Direct UI structure rendering
                 is_json = provider_name in ["discord", "slack"]
@@ -85,6 +93,19 @@ class AlertFactory:
             else:
                 logger.error("Neither 'template' nor 'template_content' provided.")
                 return
+
+            # ---------------------------------------------------------
+            # Envelope Logic (Email Specific)
+            # ---------------------------------------------------------
+            if provider_name == "email":
+                # Extract subject from data or message, default to config/hardcoded
+                subject = data.get("subject") or message.get("subject") or "Alert Notification"
+                
+                # Wrap in envelope dict
+                rendered_payload = {
+                    "subject": subject,
+                    "body": rendered_payload if isinstance(rendered_payload, str) else str(rendered_payload)
+                }
 
             logger.info(f"Sending message via {provider_name} to {destination[:10]}...")
             await provider.send(destination, rendered_payload)
@@ -120,7 +141,7 @@ class AlertFactory:
         elif provider == "email":
             return {
                 "subject": "[Error] Alert Rendering Failed",
-                "body": error_msg
+                "body": f"<h3>⚠️ Alert Rendering Failed</h3><p>Error: {str(error)}</p><pre>{data_json}</pre>"
             }
         
         return None

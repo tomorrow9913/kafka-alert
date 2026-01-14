@@ -26,6 +26,16 @@ class KafkaProducerConfig(BaseModel):
     retry_backoff_ms: int = 100
     linger_ms: int = 0
 
+class EmailConfig(BaseModel):
+    """SMTP Email configurations."""
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    USE_TLS: bool = True
+    DEFAULT_FROM_EMAIL: str = "alert-system@example.com"
+    DEFAULT_TO_EMAIL: Optional[str] = None
+
 class Settings(BaseSettings):
     """Main settings object that aggregates all configurations."""
     APP_CONFIG: AppConfig = AppConfig()
@@ -39,8 +49,9 @@ class Settings(BaseSettings):
     KAFKA_CONSUMER_CONFIG: KafkaConsumerConfig = KafkaConsumerConfig()
     KAFKA_PRODUCER_CONFIG: KafkaProducerConfig = KafkaProducerConfig()
 
-    # Discord Configuration (from previous setup)
+    # Provider Configurations
     DISCORD_WEBHOOK_URL: Optional[str] = None
+    EMAIL_CONFIG: EmailConfig = EmailConfig()
 
     model_config = SettingsConfigDict(
         env_file='.env',
