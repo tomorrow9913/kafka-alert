@@ -7,6 +7,7 @@ on:
   pull_request:
     types:
       - opened
+      - synchronize
       - ready_for_review
   workflow_dispatch:
 
@@ -15,102 +16,79 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      issues: write
+      security-events: write
+      actions: read
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        if: github.event_name != 'workflow_dispatch'
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+        with:
+          files: |
+             **.py
       
       - name: Set up Python
+        if: steps.changed-files.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
         uses: actions/setup-python@v4
         with:
           python-version: '3.8'
       
-      - name: Install bandit
+      # [1] 설치: bandit과 포맷터를 '함께' 설치합니다.
+      # 포맷터를 설치하면 Bandit이 플러그인으로 자동 인식합니다.
+      - name: Install bandit and sarif formatter
+        if: steps.changed-files.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
         run: |
           python -m pip install --upgrade pip
-          pip install bandit
+          pip install bandit bandit-sarif-formatter
           
+      # [2] 실행: --format sarif 옵션을 직접 사용합니다.
       - name: Run Bandit scan
+        if: steps.changed-files.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
+        env:
+          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
-          bandit -r . -f json -o bandit-results.json || true
-      
-      - name: Format results to markdown
-        run: |
-          python3 << 'EOF' > bandit-report.md
-          import json
-          from datetime import datetime
-          
-          with open('bandit-results.json', 'r') as f:
-              data = json.load(f)
-          
-          def write_report():
-              report = []
-              
-              # 헤더 추가
-              report.append("# 🔒 Bandit Security Scan Results")
-              report.append(f"Generated on: {data['generated_at']}\n")
-              
-              # 통계 정보 표
-              report.append("## 📊 Overall Statistics")
-              report.append("\n| Metric | Value |")
-              report.append("|--------|-------|")
-              
-              totals = data['metrics']['_totals']
-              stats = [
-                  ("Total Files", f"{len(data['metrics']) - 1}"),
-                  ("Lines of Code", f"{totals['loc']:,}"),
-                  ("Issues Found", f"{len(data['results'])}"),
-                  ("High Severity Issues", f"{totals['SEVERITY.HIGH']}"),
-                  ("Medium Severity Issues", f"{totals['SEVERITY.MEDIUM']}"),
-                  ("Low Severity Issues", f"{totals['SEVERITY.LOW']}"),
-                  ("High Confidence Issues", f"{totals['CONFIDENCE.HIGH']}"),
-                  ("Medium Confidence Issues", f"{totals['CONFIDENCE.MEDIUM']}"),
-                  ("Low Confidence Issues", f"{totals['CONFIDENCE.LOW']}")
-              ]
-              
-              for metric, value in stats:
-                  report.append(f"| {metric} | {value} |")
-              report.append("")
-              
-              # 취약점이 발견된 경우에만 상세 정보 추가
-              if data['results']:
-                  report.append("## 🚨 Security Issues Found\n")
-                  for idx, issue in enumerate(data['results'], 1):
-                      report.append(f"### Issue {idx}: {issue['test_name']}")
-                      
-                      # 이슈 상세 정보 표
-                      report.append("\n| Category | Detail |")
-                      report.append("|----------|---------|")
-                      report.append(f"| Description | {issue['issue_text']} |")
-                      report.append(f"| Severity | {issue['issue_severity']} |")
-                      report.append(f"| Confidence | {issue['issue_confidence']} |")
-                      report.append(f"| Location | {issue['filename']}:{issue['line_number']} |")
-                      if 'issue_cwe' in issue:
-                          report.append(f"| CWE | [{issue['issue_cwe']['id']}]({issue['issue_cwe']['link']}) |")
-                      report.append(f"| More Info | {issue['more_info']} |")
-                      
-                      report.append("\n**Code:**")
-                      report.append(f"```python\n{issue['code'].strip()}\n```\n")
-              else:
-                  report.append("## ✅ No Security Issues Found")
-                  report.append("No security issues were detected in the scan.\n")
-              
-              return "\n".join(report)
-          
-          with open('bandit-report.md', 'w') as f:
-              f.write(write_report())
-          EOF
-      
-      - name: Get current time
-        id: current-time
-        run: echo "timestamp=$(TZ='Asia/Seoul' date '+%Y-%m-%d %H:%M')" >> $GITHUB_OUTPUT
+          # (A) 로직 체크용 JSON 생성 (High 등급 개수 파악을 위해 필요)
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+             echo "Scanning ALL files for Metrics..."
+             bandit -r . -f json -o bandit-results.json || true
+          else
+             echo "Scanning CHANGED files for Metrics..."
+             bandit -f json -o bandit-results.json $ALL_CHANGED_FILES || true
+          fi
 
-      - name: Create Issue From File
-        uses: peter-evans/create-issue-from-file@v4
+          # (B) GitHub 업로드용 SARIF 생성 (사용자님이 찾으신 정석 방법)
+          # 플러그인이 설치되었으므로 --format sarif 사용 가능
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+             echo "Generating SARIF for ALL files..."
+             bandit -r . --format sarif --output bandit-results.sarif || true
+          else
+             echo "Generating SARIF for CHANGED files..."
+             bandit --format sarif --output bandit-results.sarif $ALL_CHANGED_FILES || true
+          fi
+      
+      - name: Upload SARIF file
+        if: steps.changed-files.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
+        uses: github/codeql-action/upload-sarif@v4
         with:
-          title: 🔒 Bandit Security Scan Report (${{ steps.current-time.outputs.timestamp }})
-          content-filepath: ./bandit-report.md
-          labels: |
-            security
-            automated-scan
+          sarif_file: bandit-results.sarif
+          category: bandit
+
+      - name: Check for High Severity Issues
+        if: steps.changed-files.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
+        run: |
+          HIGH_ISSUES=$(jq '.metrics._totals."SEVERITY.HIGH"' bandit-results.json)
+          
+          echo "Detected High Severity Issues: $HIGH_ISSUES"
+          
+          if [ "$HIGH_ISSUES" != "null" ] && [ "$HIGH_ISSUES" -gt 0 ]; then
+            echo "::error::🚨 High severity security issues found! Blocking merge."
+            exit 1
+          else
+            echo "✅ No High severity issues found."
+          fi
