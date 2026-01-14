@@ -41,11 +41,14 @@ docker compose up --build
 
 ### Local Development
 ```bash
-# Install dependencies (using uv recommended)
-uv pip install -r requirements.txt
+# Install dependencies and create virtual environment
+uv sync
 
-# Run
-python main.py
+# Run the application using uv
+uv run main.py
+
+# Run tests
+uv run pytest
 ```
 
 ## Directory Structure
