@@ -7,8 +7,10 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 WORKDIR /app
 
 # Install build dependencies for Alpine
-# build-base: gcc, libc-dev (needed for compiling C extensions like aiokafka)
-RUN apk add --no-cache build-base
+# build-base: gcc, libc-dev, make
+# python3-dev: Python header files
+# zlib-dev: zlib headers (often needed for C extensions)
+RUN apk add --no-cache build-base python3-dev zlib-dev
 
 # Install dependencies using uv sync
 # This creates a virtual environment in /app/.venv
