@@ -1,9 +1,9 @@
 import os
 import logging
-
 from logging.handlers import RotatingFileHandler
+from core.config import settings
 
-def setup_logging(logger_name: str, log_dir: str = os.getenv("LOG_DIR", "logs")) -> logging.Logger:
+def setup_logging(logger_name: str, log_dir: str = settings.log_dir) -> logging.Logger:
     logger = logging.getLogger(logger_name)
 
     # 이미 핸들러가 있다면 리턴

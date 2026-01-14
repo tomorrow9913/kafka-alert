@@ -1,4 +1,3 @@
-import os
 from typing import Callable, List, Dict
 import asyncio
 import json
@@ -7,15 +6,9 @@ from kafka import KafkaConsumer, KafkaProducer
 from kafka.errors import NoBrokersAvailable
 from contextlib import contextmanager
 from utils.logger import setup_logging
+from core.config import settings
 
 logger = setup_logging(__name__)
-
-# Kafka Configuration Defaults
-KAFKA_GROUP_ID = os.getenv('KAFKA_GROUP_ID', 'alert-group')
-KAFKA_SESSION_TIMEOUT_MS = int(os.getenv('KAFKA_SESSION_TIMEOUT_MS', 30000))
-KAFKA_HEARTBEAT_INTERVAL_MS = int(os.getenv('KAFKA_HEARTBEAT_INTERVAL_MS', 10000))
-KAFKA_MAX_POLL_INTERVAL_MS = int(os.getenv('KAFKA_MAX_POLL_INTERVAL_MS', 300000))
-KAFKA_AUTO_OFFSET_RESET = os.getenv('KAFKA_AUTO_OFFSET_RESET', 'earliest')
 
 class EventBus:
     def __init__(self):
@@ -58,16 +51,16 @@ class MessageQueue:
                 return KafkaConsumer(
                     *self.topics,
                     bootstrap_servers=self.bootstrap_servers,
-                    auto_offset_reset=KAFKA_AUTO_OFFSET_RESET,
+                    auto_offset_reset=settings.kafka_auto_offset_reset,
                     enable_auto_commit=True,
-                    group_id=KAFKA_GROUP_ID,
+                    group_id=settings.kafka_group_id,
                     value_deserializer=lambda x: x,  # Raw bytes, handled in loop
                     key_deserializer=lambda x: x.decode('utf-8') if x else None,
-                    session_timeout_ms=KAFKA_SESSION_TIMEOUT_MS,
-                    heartbeat_interval_ms=KAFKA_HEARTBEAT_INTERVAL_MS,
-                    request_timeout_ms=KAFKA_SESSION_TIMEOUT_MS + 5000,
+                    session_timeout_ms=settings.kafka_session_timeout_ms,
+                    heartbeat_interval_ms=settings.kafka_heartbeat_interval_ms,
+                    request_timeout_ms=settings.kafka_session_timeout_ms + 5000,
                     connections_max_idle_ms=180000,
-                    max_poll_interval_ms=KAFKA_MAX_POLL_INTERVAL_MS,
+                    max_poll_interval_ms=settings.kafka_max_poll_interval_ms,
                     api_version_auto_timeout_ms=60000,
                     security_protocol='PLAINTEXT',
                     fetch_max_wait_ms=500,

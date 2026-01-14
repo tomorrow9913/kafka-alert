@@ -1,14 +1,14 @@
-import os
 import asyncio
 
 from utils.queue_eventmanager import EventManager
 from utils.logger import setup_logging
 from callback import callbacks
+from core.config import settings
 
 async def main():
     logger = setup_logging(__name__)
     
-    kafka_brokers = os.getenv("KAFKA_BROKERS")
+    kafka_brokers = settings.kafka_brokers
     if not kafka_brokers:
         logger.error("No Kafka brokers configured, skipping event manager setup")
         return
