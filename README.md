@@ -135,8 +135,13 @@ async def callback(msg: ConsumerRecord):
         await factory.process(msg.value)
 ```
 
-## Message Protocol
-Kafka 메시지 Payload 예시:
+## Message Protocol (Payload)
+
+알림을 전송하기 위해 Kafka 메시지는 아래 두 가지 방식 중 하나로 템플릿을 지정해야 합니다.
+
+### 1. 파일 기반 템플릿 (`template`)
+서버의 `templates/` 폴더에 저장된 파일명을 사용합니다.
+
 ```json
 {
   "provider": "discord",
@@ -150,4 +155,20 @@ Kafka 메시지 Payload 예시:
   }
 }
 ```
-`core/factory.py`는 이 메시지를 받아 `templates/discord/error_report.json.j2` 템플릿을 렌더링하고 Discord로 전송합니다.
+
+### 2. 직접 템플릿 전달 (`template_content`)
+클라이언트가 UI 구조(Jinja2 문자열)를 직접 전달합니다. 배포 없이 동적으로 UI를 변경할 때 유용합니다.
+
+```json
+{
+  "provider": "discord",
+  "template_content": "{\"content\": \"🚨 **{{ service }}** 에서 에러 발생! {{ msg }}\"}",
+  "data": {
+    "service": "Auth-Module",
+    "msg": "Invalid Token detected"
+  }
+}
+```
+
+> [!TIP]
+> `discord`나 `slack` 프로바이더 사용 시 `template_content`는 유효한 JSON 문자열 형태여야 합니다. `email` 프로바이더는 일반 텍스트나 HTML 문자열을 지원합니다.
