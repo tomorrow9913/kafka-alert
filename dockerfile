@@ -7,9 +7,8 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 WORKDIR /app
 
 # Install build dependencies for Alpine
-# build-base: gcc, libc-dev (needed for compiling C extensions)
-# postgresql-dev: headers for psycopg2
-RUN apk add --no-cache build-base postgresql-dev
+# build-base: gcc, libc-dev (needed for compiling C extensions like aiokafka)
+RUN apk add --no-cache build-base
 
 # Install dependencies using uv sync
 # This creates a virtual environment in /app/.venv
@@ -22,10 +21,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 FROM python:3.12-alpine
 
 WORKDIR /app
-
-# Install runtime dependencies
-# libpq: required for psycopg2 to connect to postgres
-RUN apk add --no-cache libpq
 
 # Copy the virtual environment from the builder
 COPY --from=builder /app/.venv /app/.venv
