@@ -39,6 +39,7 @@ EMAIL_CONFIG__SMTP_PASSWORD=your_app_password
 EMAIL_CONFIG__USE_TLS=True
 EMAIL_CONFIG__DEFAULT_FROM_EMAIL=alert-system@example.com
 EMAIL_CONFIG__DEFAULT_TO_EMAIL=admin@example.com
+EMAIL_CONFIG__DEFAULT_SUBJECT="Alert Notification"
 ```
 
 ## How To Execute
