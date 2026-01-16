@@ -11,7 +11,7 @@ logger = LogManager.get_logger(__name__)
 
 class Callback(NamedTuple):
     name: str
-    func: Callable
+    func: Callable[..., object]
     z_index: int = 0
 
 
