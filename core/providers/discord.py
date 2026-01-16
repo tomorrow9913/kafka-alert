@@ -1,15 +1,18 @@
 import aiohttp
-from typing import Dict, Any, Union
+from typing import Dict, Any, Union, List
 from .base import BaseProvider
 from utils.logger import LogManager
 
 logger = LogManager.get_logger(__name__)
 
+
 class DiscordProvider(BaseProvider):
-    async def send(self, destination: str, payload: Union[Dict[str, Any], str]) -> bool:
+    async def send(
+        self, destination: Union[str, List[str]], payload: Union[Dict[str, Any], str]
+    ) -> bool:
         """
         Sends a message to a Discord Webhook.
-        
+
         Args:
             destination: Discord Webhook URL.
             payload: JSON payload (dict).
@@ -18,16 +21,27 @@ class DiscordProvider(BaseProvider):
             logger.error("DiscordProvider requires a dict payload.")
             return False
 
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(destination, json=payload) as response:
-                    if 200 <= response.status < 300:
-                        logger.info("Discord message sent successfully.")
-                        return True
-                    else:
-                        text = await response.text()
-                        logger.error(f"Failed to send Discord message. Status: {response.status}, Response: {text}")
-                        return False
-        except Exception as e:
-            logger.error(f"Exception sending Discord message: {e}")
-            return False
+        if isinstance(destination, str):
+            destinations = [destination]
+        else:
+            destinations = destination
+
+        results = []
+        for dest in destinations:
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(dest, json=payload) as response:
+                        if 200 <= response.status < 300:
+                            logger.info(f"Discord message sent successfully to {dest}.")
+                            results.append(True)
+                        else:
+                            text = await response.text()
+                            logger.error(
+                                f"Failed to send Discord message to {dest}. Status: {response.status}, Response: {text}"
+                            )
+                            results.append(False)
+            except Exception as e:
+                logger.error(f"Exception sending Discord message to {dest}: {e}")
+                results.append(False)
+
+        return all(results)
