@@ -43,6 +43,7 @@ class EmailConfig(BaseModel):
     USE_TLS: bool = True
     DEFAULT_FROM_EMAIL: str = "alert-system@example.com"
     DEFAULT_TO_EMAIL: Optional[str] = None
+    DEFAULT_SUBJECT: str = "Alert Notification"
 
 
 class Settings(BaseSettings):

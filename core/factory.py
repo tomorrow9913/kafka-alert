@@ -135,9 +135,7 @@ class AlertFactory:
                 # Default subject fallback logic if not in _mail_meta
                 if "subject" not in mail_meta:
                     mail_meta["subject"] = (
-                        data.get("subject")
-                        or message.get("subject")
-                        or "Alert Notification"
+                        settings.EMAIL_CONFIG.DEFAULT_SUBJECT or "Alert Notification"
                     )
 
                 # Construct Envelope Payload
