@@ -5,6 +5,7 @@ from utils.logger import LogManager
 
 logger = LogManager.get_logger(__name__)
 
+
 class TemplateRenderer:
     def __init__(self, template_dir: str = "templates"):
         self.template_dir = template_dir
@@ -13,13 +14,15 @@ class TemplateRenderer:
                 loader=FileSystemLoader(self.template_dir),
                 autoescape=True,
                 trim_blocks=True,
-                lstrip_blocks=True
+                lstrip_blocks=True,
             )
         except Exception as e:
             logger.error(f"Failed to initialize Jinja2 environment: {e}")
             raise
 
-    def render(self, template_name: str, data: Dict[str, Any]) -> Union[Dict[str, Any], str]:
+    def render(
+        self, template_name: str, data: Dict[str, Any]
+    ) -> Union[Dict[str, Any], str]:
         """
         Render a template from a file with the given data.
         If the template ends with .json.j2, returns a Dict.
@@ -28,12 +31,12 @@ class TemplateRenderer:
         try:
             template = self.env.get_template(template_name)
             rendered_str = template.render(**data)
-            
-            if template_name.endswith('.json.j2'):
+
+            if template_name.endswith(".json.j2"):
                 return self._parse_json(rendered_str, template_name)
-            
+
             return rendered_str
-            
+
         except TemplateNotFound:
             logger.error(f"Template not found: {template_name}")
             raise
@@ -44,17 +47,19 @@ class TemplateRenderer:
             logger.error(f"Unexpected error during rendering: {e}")
             raise
 
-    def render_from_string(self, template_content: str, data: Dict[str, Any], is_json: bool = True) -> Union[Dict[str, Any], str]:
+    def render_from_string(
+        self, template_content: str, data: Dict[str, Any], is_json: bool = True
+    ) -> Union[Dict[str, Any], str]:
         """
         Render a template from a raw string.
         """
         try:
             template = self.env.from_string(template_content)
             rendered_str = template.render(**data)
-            
+
             if is_json:
                 return self._parse_json(rendered_str, "raw_string_template")
-            
+
             return rendered_str
         except Exception as e:
             logger.error(f"Error rendering template from string: {e}")

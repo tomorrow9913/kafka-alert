@@ -8,7 +8,7 @@
         "name": "Code: {{ err.code }}",
         "value": "{{ err.msg }}",
         "inline": true
-      }{{ "," if not loop.last }} 
+      }{{ "," if not loop.last }}
       {% endfor %}
     ],
     "footer": { "text": "{{ timestamp }}" }

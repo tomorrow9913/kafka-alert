@@ -19,13 +19,13 @@
         <div class="content">
             <p><strong>Service:</strong> {{ service }}</p>
             <p><strong>Message:</strong> {{ message }}</p>
-            
+
             {% if error_code %}
             <div class="meta">
                 <p><strong>Error Code:</strong> {{ error_code }}</p>
             </div>
             {% endif %}
-            
+
             {% if details %}
             <h3>Details:</h3>
             <pre>{{ details }}</pre>

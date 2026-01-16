@@ -70,11 +70,11 @@ services:
       # Application Config
       - APP_CONFIG__ENV=dev
       - APP_CONFIG__LOG_LEVEL=DEBUG
-      
+
       # Kafka Config (Pointing to the internal docker network alias 'kafka')
       - KAFKA_BROKERS=["kafka:9092"]
       - KAFKA_CONSUMER_GROUP=alert-group-dev
-      
+
       # Load other secrets from .env file (Discord Webhook, DB, etc.)
     env_file:
       - .env
