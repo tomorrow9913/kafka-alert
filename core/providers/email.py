@@ -25,7 +25,9 @@ class EmailProvider(BaseProvider):
         body = ""
 
         if isinstance(payload, dict):
-            subject = payload.get("subject", subject)
+            # The factory provides an envelope with 'headers' and 'body'
+            headers = payload.get("headers", {})
+            subject = headers.get("subject", subject)
             body = payload.get("body", str(payload))
         else:
             body = str(payload)

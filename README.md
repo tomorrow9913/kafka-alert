@@ -134,11 +134,11 @@ ALERT_DISABLE = False
 
 async def callback(msg: ConsumerRecord):
     """
-    msg.value는 이미 JSON으로 역직렬화된 상태(dict)이거나, 
+    msg.value는 이미 JSON으로 역직렬화된 상태(dict)이거나,
     실패 시 bytes 그대로일 수 있습니다.
     """
     logger.info(f"Received message on topic {msg.topic}")
-    
+
     if isinstance(msg.value, dict):
         # AlertFactory를 통해 템플릿 렌더링 및 전송
         await factory.process(msg.value)
@@ -146,14 +146,14 @@ async def callback(msg: ConsumerRecord):
 
 ## Message Protocol (Payload)
 
-알림을 전송하기 위해 Kafka 메시지는 아래 두 가지 방식 중 하나로 템플릿을 지정해야 합니다.
+Kafka로 전달되는 알림 메시지는 아래 JSON 구조를 따라야 합니다. 메시지는 렌더링에 필요한 데이터와 어떤 알림 채널(Provider)로 보낼지에 대한 정보를 포함합니다.
 
-### 1. 파일 기반 템플릿 (`template`)
-서버의 `templates/` 폴더에 저장된 파일명을 사용합니다.
+### 기본 페이로드 구조
 
 ```json
 {
   "provider": "discord",
+  "destination": "https://discord.com/api/webhooks/...",
   "template": "discord/error_report",
   "data": {
     "service": "Payment-API",
@@ -165,38 +165,78 @@ async def callback(msg: ConsumerRecord):
 }
 ```
 
-### 2. 직접 템플릿 전달 (`template_content`)
-클라이언트가 UI 구조(Jinja2 문자열)를 직접 전달합니다. 배포 없이 동적으로 UI를 변경할 때 유용합니다.
+- `provider` (필수): 알림을 보낼 채널 (`discord`, `slack`, `email`).
+- `destination` (선택): 알림을 보낼 주소 (Webhook URL, 이메일 주소 등). 생략 시 `.env` 설정에 따라 기본값으로 전송됩니다.
+- `template` 또는 `template_content` (필수): 렌더링할 템플릿을 지정합니다.
+  - `template`: `templates/` 폴더 내의 템플릿 파일 경로.
+  - `template_content`: Jinja2 템플릿 문자열을 직접 전달.
+- `data`: 템플릿 렌더링에 사용될 데이터 (객체).
 
-```json
-{
-  "provider": "discord",
-  "template_content": "{\"content\": \"🚨 **{{ service }}** 에서 에러 발생! {{ msg }}\"}",
-  "data": {
-    "service": "Auth-Module",
-    "msg": "Invalid Token detected"
+---
+
+### Provider별 페이로드 상세 가이드
+
+#### 1. Discord & Slack
+
+Discord와 Slack은 JSON 기반의 Webhook을 사용하므로, 템플릿은 최종적으로 **유효한 JSON 객체**를 생성해야 합니다.
+
+- **파일 기반 (`template`)**:
+  - `template` 경로의 파일은 Jinja2 문법으로 작성된 JSON이어야 합니다.
+  - `discord` 프로바이더의 경우, 템플릿 이름 뒤에 `.json.j2`가 자동으로 추가될 수 있습니다. (예: `discord/error_report` -> `discord/error_report.json.j2`)
+
+  ```json
+  // Kafka Payload
+  {
+    "provider": "discord",
+    "template": "discord/error_report",
+    "data": { "service": "API", "msg": "DB Error" }
   }
-}
-```
+  ```
+
+- **직접 전달 (`template_content`)**:
+  - `template_content`는 Jinja2 문법이 적용된 **JSON 문자열**이어야 합니다.
+  - 이 문자열은 서버에서 렌더링된 후 JSON 객체로 파싱되어 Webhook으로 전송됩니다.
+
+  ```json
+  // Kafka Payload
+  {
+    "provider": "slack",
+    "template_content": "{ \"text\": \"서비스: {{ service }} | 메시지: {{ msg }}\" }",
+    "data": { "service": "Worker", "msg": "Queue full" }
+  }
+  ```
 
 > [!TIP]
-> `discord`나 `slack` 프로바이더 사용 시 `template_content`는 유효한 JSON 문자열 형태여야 합니다. `email` 프로바이더는 일반 텍스트나 HTML 문자열을 지원합니다.
+> Slack의 경우, 템플릿이 JSON이 아닌 일반 텍스트를 생성하면 `{"text": "생성된 텍스트"}` 형태로 자동 변환되는 Fallback 기능이 있습니다. 하지만 가급적 정확한 JSON 형태를 사용하는 것을 권장합니다.
 
-### 3. Email 전송 특화 (Subject & Body)
-Email 프로바이더는 제목(Subject)이 필수입니다. 아래와 같이 `data` 필드 내에 `subject`를 포함하는 것을 권장합니다.
+#### 2. Email
 
-```json
-{
-  "provider": "email",
-  "template": "email/alert.html.j2",
-  "destination": "admin@example.com",
-  "data": {
-    "subject": "[Emergency] DB Connection Timeout",
-    "service": "Payment-API",
-    "message": "Critical failure in production DB."
+Email 프로바이더는 템플릿으로 **이메일 본문(Body)**을 생성하고, 별도 필드를 통해 **제목(Subject)**을 지정합니다.
+
+- **메일 제목(Subject) 지정**:
+  메일 제목은 아래의 우선순위로 결정됩니다. **`_mail_meta` 사용을 가장 권장합니다.**
+  1. `data._mail_meta.subject`
+  2. `data.subject`
+  3. `subject` (페이로드 최상단)
+
+- **페이로드 예시**:
+  - `template`은 HTML 본문을 생성하는 `email/alert.html.j2` 파일을 가리킵니다.
+  - 메일 제목은 `data._mail_meta.subject` 필드를 통해 전달합니다.
+
+  ```json
+  {
+    "provider": "email",
+    "destination": ["dev@example.com", "ops@example.com"],
+    "template": "email/alert.html",
+    "data": {
+      "_mail_meta": {
+        "subject": "[긴급] 데이터베이스 연결 시간 초과"
+      },
+      "service": "Payment-API",
+      "message": "프로덕션 데이터베이스에서 심각한 장애가 발생했습니다."
+    }
   }
-}
-```
+  ```
 
 > [!NOTE]
-> `destination`을 생략할 경우 설정된 `EMAIL_CONFIG__DEFAULT_TO_EMAIL` 주소로 발송됩니다.
+> `data` 필드 내에 `_`로 시작하는 키(예: `_mail_meta`)는 템플릿 렌더링 시에는 사용되지 않고, 이메일 제목과 같은 메타데이터를 전달하는 데 사용됩니다.
