@@ -34,21 +34,12 @@ class AlertFactory:
 
     async def process(self, message: Dict[str, Any]):
         """
-        Process an alert message:
-        1. Validate payload.
-        2. Select provider.
-        3. Render template (from file or string).
-        4. Envelope Processing (for Email).
-        5. Send message.
+        Process an alert message by validating the payload, selecting the provider,
+        rendering the template, and sending the message.
         """
         logger.debug(f"Processing message: {message}")
 
         provider_name = message.get("provider")
-        template_name = message.get("template")
-        template_content = message.get("template_content")
-        data = message.get("data", {})
-        destination = message.get("destination")
-
         if not provider_name:
             logger.error("Message missing 'provider' field.")
             return
@@ -58,10 +49,8 @@ class AlertFactory:
             return
 
         provider = self.providers[provider_name]
+        destination = message.get("destination")
 
-        # ---------------------------------------------------------
-        # Destination Fallback Logic
-        # ---------------------------------------------------------
         if not destination:
             if provider_name == "discord":
                 destination = settings.DISCORD_WEBHOOK_URL
@@ -69,76 +58,43 @@ class AlertFactory:
                 destination = settings.EMAIL_CONFIG.DEFAULT_TO_EMAIL
 
         if not destination:
-            logger.error(
-                f"No destination (URL/Address) found for provider '{provider_name}'."
-            )
+            logger.error(f"No destination found for provider '{provider_name}'.")
             return
 
         try:
-            # ---------------------------------------------------------
-            # Rendering Logic
-            # ---------------------------------------------------------
+            template_name = message.get("template")
+            template_content = message.get("template_content")
+            data = message.get("data", {})
 
-            # 1. Extract metadata & Clean context
-            # We use a copy of data for extraction to avoid side effects if data is reused elsewhere (though unlikely here)
-            # Actually, modifying 'data' in place via pop is fine as it's local scope variable reference from message.get.
-            # But the requirement says "pop() ... then create copy".
-
-            mail_meta = {}
-            if isinstance(data, dict):
-                # Use pop to remove it from data so it doesn't get into render_context loop if we just filtered
-                # But we are filtering next anyway. Let's follow instructions strictly: "pop() ... then filter"
-                if "_mail_meta" in data:
-                    mail_meta = data.pop("_mail_meta")
-
-            # Create a clean context for rendering (remove keys starting with _)
+            mail_meta = data.pop("_mail_meta", {}) if isinstance(data, dict) else {}
             render_context = (
                 {k: v for k, v in data.items() if not k.startswith("_")}
                 if isinstance(data, dict)
                 else data
             )
 
-            rendered_payload = None
-
             if template_content:
-                # Direct UI structure rendering
                 is_json = provider_name in ["discord", "slack"]
                 rendered_payload = self.renderer.render_from_string(
                     template_content, render_context, is_json=is_json
                 )
             elif template_name:
-                # File-based template rendering
-                full_template_name = template_name
-                if not full_template_name.endswith(".j2"):
+                if "." not in template_name:
                     if provider_name == "discord":
-                        full_template_name += ".json.j2"
+                        template_name += ".json.j2"
                     elif provider_name == "email":
-                        full_template_name += ".html.j2"
-                rendered_payload = self.renderer.render(
-                    full_template_name, render_context
-                )
+                        template_name += ".html.j2"
+                rendered_payload = self.renderer.render(template_name, render_context)
             else:
                 logger.error("Neither 'template' nor 'template_content' provided.")
                 return
 
-            # ---------------------------------------------------------
-            # Envelope Logic (Email Specific)
-            # ---------------------------------------------------------
             if provider_name == "email":
-                # Ensure we have a string body
-                body_content = (
-                    rendered_payload
-                    if isinstance(rendered_payload, str)
-                    else str(rendered_payload)
+                body_content = str(rendered_payload)
+                mail_meta.setdefault(
+                    "subject",
+                    settings.EMAIL_CONFIG.DEFAULT_SUBJECT or "Alert Notification",
                 )
-
-                # Default subject fallback logic if not in _mail_meta
-                if "subject" not in mail_meta:
-                    mail_meta["subject"] = (
-                        settings.EMAIL_CONFIG.DEFAULT_SUBJECT or "Alert Notification"
-                    )
-
-                # Construct Envelope Payload
                 rendered_payload = {"headers": mail_meta, "body": body_content}
 
             display_destination = (
@@ -147,7 +103,7 @@ class AlertFactory:
                 else ", ".join(map(str, destination))
             )
             logger.info(
-                f"Sending message via {provider_name} to {display_destination[:10]}..."
+                f"Sending message via {provider_name} to {display_destination[:20]}..."
             )
             await provider.send(destination, rendered_payload)
 
