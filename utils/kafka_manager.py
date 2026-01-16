@@ -36,6 +36,7 @@ class KafkaManager:
     Manages the application's Kafka producers and consumers.
     Created via dependency injection and managed with the application's lifecycle.
     """
+
     def __init__(
         self,
         bootstrap_servers: list[str],
@@ -52,7 +53,7 @@ class KafkaManager:
         self.consumer: Optional[AIOKafkaConsumer] = None
         self._consumer_task: Optional[asyncio.Task[None]] = None
         self._callbacks: dict[str, list[MessageHandler]] = defaultdict(list)
-        
+
         # Semaphore for concurrency control
         self._semaphore = asyncio.Semaphore(settings.KAFKA_MAX_CONCURRENT_TASKS)
 
@@ -80,7 +81,9 @@ class KafkaManager:
             topics = await self.consumer.topics()
             return topics
         except Exception as e:
-            logger.error(f"Failed to fetch topics from Kafka cluster: {e}", exc_info=True)
+            logger.error(
+                f"Failed to fetch topics from Kafka cluster: {e}", exc_info=True
+            )
             return set()
 
     async def _run_consumer(self):
@@ -92,11 +95,15 @@ class KafkaManager:
         try:
             async for msg in self.consumer:
                 if msg.value is None:
-                    logger.debug(f"Skipping message with deserialization failure on topic '{msg.topic}'")
+                    logger.debug(
+                        f"Skipping message with deserialization failure on topic '{msg.topic}'"
+                    )
                     continue
 
-                logger.debug(f"Message received: Topic={msg.topic}, Partition={msg.partition}, Offset={msg.offset}")
-                
+                logger.debug(
+                    f"Message received: Topic={msg.topic}, Partition={msg.partition}, Offset={msg.offset}"
+                )
+
                 if msg.topic in self._callbacks:
                     for cb in self._callbacks[msg.topic]:
                         # Acquire semaphore before creating task
@@ -106,16 +113,23 @@ class KafkaManager:
         except asyncio.CancelledError:
             logger.info("Consumer task cancelled.")
         except Exception as e:
-            logger.error(f"A critical error occurred in the consumer task: {e}", exc_info=True)
+            logger.error(
+                f"A critical error occurred in the consumer task: {e}", exc_info=True
+            )
         finally:
             logger.info("Consumer task finished.")
 
-    async def _execute_callback_safe(self, callback: MessageHandler, msg: ConsumerRecord):
+    async def _execute_callback_safe(
+        self, callback: MessageHandler, msg: ConsumerRecord
+    ):
         """Safely executes a callback within the semaphore context and logs exceptions."""
         try:
             await callback(msg)
         except Exception as e:
-            logger.error(f"Error executing callback '{callback.__name__}' for topic '{msg.topic}': {e}", exc_info=True)
+            logger.error(
+                f"Error executing callback '{callback.__name__}' for topic '{msg.topic}': {e}",
+                exc_info=True,
+            )
         finally:
             # Always release the semaphore
             self._semaphore.release()
@@ -135,7 +149,7 @@ class KafkaManager:
 
             if self.subscribed_topics:
                 consumer_kwargs = self._consumer_config.model_dump(exclude_none=True)
-                
+
                 temp_consumer = AIOKafkaConsumer(
                     bootstrap_servers=self._bootstrap_servers,
                     group_id=self._consumer_group,
@@ -145,30 +159,44 @@ class KafkaManager:
                 await temp_consumer.start()
                 try:
                     all_cluster_topics = await temp_consumer.topics()
-                    logger.info(f"Available topics in Kafka cluster: {all_cluster_topics}")
-                    
+                    logger.info(
+                        f"Available topics in Kafka cluster: {all_cluster_topics}"
+                    )
+
                     configured_topics = list(self._callbacks.keys())
-                    valid_topics = [t for t in configured_topics if t in all_cluster_topics]
-                    invalid_topics = [t for t in configured_topics if t not in all_cluster_topics]
+                    valid_topics = [
+                        t for t in configured_topics if t in all_cluster_topics
+                    ]
+                    invalid_topics = [
+                        t for t in configured_topics if t not in all_cluster_topics
+                    ]
 
                     for t in invalid_topics:
-                        logger.error(f"Configured topic '{t}' does not exist in Kafka cluster. Removing callbacks and will not subscribe.")
+                        logger.error(
+                            f"Configured topic '{t}' does not exist in Kafka cluster. Removing callbacks and will not subscribe."
+                        )
                         self._callbacks.pop(t, None)
-                    
+
                     if not valid_topics:
-                        logger.info("No valid existing topics to subscribe after filtering. Skipping consumer start.")
+                        logger.info(
+                            "No valid existing topics to subscribe after filtering. Skipping consumer start."
+                        )
                         return
 
                     self.consumer = temp_consumer
                     self.consumer.subscribe(valid_topics)
-                    logger.info(f"Kafka Consumer connected and subscribed to topics: {valid_topics}")
-                    
+                    logger.info(
+                        f"Kafka Consumer connected and subscribed to topics: {valid_topics}"
+                    )
+
                     self._consumer_task = asyncio.create_task(self._run_consumer())
                 except Exception:
                     await temp_consumer.stop()
                     raise
             else:
-                logger.info("No topics subscribed for consumer. Skipping consumer start.")
+                logger.info(
+                    "No topics subscribed for consumer. Skipping consumer start."
+                )
         except Exception as e:
             logger.error(f"Failed to connect to Kafka: {e}")
             raise
@@ -190,7 +218,9 @@ class KafkaManager:
             await self.producer.stop()
             logger.info("Kafka Producer disconnected.")
 
-    async def send_message(self, topic: str, message: dict) -> Awaitable[ConsumerRecord]:
+    async def send_message(
+        self, topic: str, message: dict
+    ) -> Awaitable[ConsumerRecord]:
         """Sends a message to the specified topic and waits for a response."""
         if not self.producer:
             raise RuntimeError("Kafka Producer is not initialized or has been stopped.")
@@ -214,7 +244,9 @@ class KafkaManager:
             logger.error(f"Failed to enqueue message for topic '{topic}': {e}")
             raise
 
+
 _kafka_manager_instance: Optional[KafkaManager] = None
+
 
 def init_kafka_manager(
     bootstrap_servers: list[str],
@@ -237,8 +269,11 @@ def init_kafka_manager(
     logger.info("KafkaManager initialized.")
     return _kafka_manager_instance
 
+
 def get_kafka_manager() -> KafkaManager:
     """Returns the initialized KafkaManager instance."""
     if _kafka_manager_instance is None:
-        raise RuntimeError("KafkaManager is not initialized. Call init_kafka_manager() first.")
+        raise RuntimeError(
+            "KafkaManager is not initialized. Call init_kafka_manager() first."
+        )
     return _kafka_manager_instance

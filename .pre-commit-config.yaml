@@ -60,7 +60,7 @@ repos:
       - id: pylint
         name: pylint
         entry: pylint
-        args: ["--disable=W,C,R,E", "-j", "0", "-rn", "-sn", "."]
+        args: ["--disable=W,C,R,E", "-j", "0", "-rn", "-sn"]
         language: system
         types: [python]
 

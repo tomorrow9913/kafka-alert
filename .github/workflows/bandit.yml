@@ -18,7 +18,7 @@ jobs:
       contents: read
       security-events: write
       actions: read
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -32,13 +32,13 @@ jobs:
         with:
           files: |
              **.py
-      
+
       - name: Set up Python
         if: steps.changed-files.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
         uses: actions/setup-python@v4
         with:
           python-version: '3.8'
-      
+
       # [1] 설치: bandit과 포맷터를 '함께' 설치합니다.
       # 포맷터를 설치하면 Bandit이 플러그인으로 자동 인식합니다.
       - name: Install bandit and sarif formatter
@@ -46,7 +46,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install bandit bandit-sarif-formatter
-          
+
       # [2] 실행: --format sarif 옵션을 직접 사용합니다.
       - name: Run Bandit scan
         if: steps.changed-files.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
@@ -71,7 +71,7 @@ jobs:
              echo "Generating SARIF for CHANGED files..."
              bandit --format sarif --output bandit-results.sarif $ALL_CHANGED_FILES || true
           fi
-      
+
       - name: Upload SARIF file
         if: steps.changed-files.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
         uses: github/codeql-action/upload-sarif@v4
@@ -83,9 +83,9 @@ jobs:
         if: steps.changed-files.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
         run: |
           HIGH_ISSUES=$(jq '.metrics._totals."SEVERITY.HIGH"' bandit-results.json)
-          
+
           echo "Detected High Severity Issues: $HIGH_ISSUES"
-          
+
           if [ "$HIGH_ISSUES" != "null" ] && [ "$HIGH_ISSUES" -gt 0 ]; then
             echo "::error::🚨 High severity security issues found! Blocking merge."
             exit 1
