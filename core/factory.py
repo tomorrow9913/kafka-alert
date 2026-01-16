@@ -128,7 +128,7 @@ class AlertFactory:
         """
         Generates a generic error message payload when rendering fails.
         """
-        data_json = json.dumps(data, indent=2, default=str)
+        data_json = json.dumps(data, indent=2, default=str, ensure_ascii=False)
         error_msg = (
             f"⚠️ **Alert Rendering Failed**\n"
             f"Error: `{str(error)}`\n"
