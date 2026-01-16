@@ -215,10 +215,10 @@ Discord와 Slack은 JSON 기반의 Webhook을 사용하므로, 템플릿은 최�
 Email 프로바이더는 템플릿으로 **이메일 본문(Body)**을 생성하고, 별도 필드를 통해 **제목(Subject)**을 지정합니다.
 
 - **메일 제목(Subject) 지정**:
-  메일 제목은 아래의 우선순위로 결정됩니다. **`_mail_meta` 사용을 가장 권장합니다.**
-  1. `data._mail_meta.subject`
-  2. `data.subject`
-  3. `subject` (페이로드 최상단)
+  메일 제목은 아래의 우선순위로 결정됩니다. `_mail_meta`를 통해 `subject`를 명시적으로 전달하는 것을 가장 권장합니다.
+  1. `data._mail_meta.subject`: `data` 필드 내 `_mail_meta` 객체에 `subject` 키가 있을 경우 사용됩니다.
+  2. `EMAIL_CONFIG__DEFAULT_SUBJECT` 환경 변수: `.env` 파일 또는 환경 변수에 `EMAIL_CONFIG__DEFAULT_SUBJECT`가 설정되어 있을 경우 사용됩니다.
+  3. 기본값 ("Alert Notification"): 위 두 가지 모두 없을 경우 "Alert Notification"이 사용됩니다.
 
 - **페이로드 예시**:
   - `template`은 HTML 본문을 생성하는 `email/alert.html.j2` 파일을 가리킵니다.
