@@ -141,7 +141,14 @@ class AlertFactory:
                 # Construct Envelope Payload
                 rendered_payload = {"headers": mail_meta, "body": body_content}
 
-            logger.info(f"Sending message via {provider_name} to {destination[:10]}...")
+            display_destination = (
+                str(destination)
+                if isinstance(destination, str)
+                else ", ".join(map(str, destination))
+            )
+            logger.info(
+                f"Sending message via {provider_name} to {display_destination[:10]}..."
+            )
             await provider.send(destination, rendered_payload)
 
         except Exception as e:
