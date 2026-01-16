@@ -16,6 +16,7 @@ class InterceptHandler(logging.Handler):
     """
     Intercepts standard `logging` logs and redirects them to `loguru`.
     """
+
     def emit(self, record: LogRecord) -> None:
         try:
             level = logger.level(record.levelname).name
@@ -27,7 +28,7 @@ class InterceptHandler(logging.Handler):
         while frame and frame.f_code.co_filename == logging.__file__:
             frame = frame.f_back
             depth += 1
-        
+
         logger_with_name = logger.bind(name=record.name)
         logger_with_name.opt(depth=depth, exception=record.exc_info).log(
             level, record.getMessage()
@@ -38,6 +39,7 @@ class _LogManager:
     """
     Singleton class for managing the application's logging system.
     """
+
     def __init__(self):
         self._configured_loggers: Set[str] = set()
         self.log_dir = Path(settings.APP_CONFIG.LOG_DIR)
@@ -94,6 +96,7 @@ class _LogManager:
             self._configured_loggers.add(name)
 
         return logger.bind(name=name, no_notify=no_notify)
+
 
 # Singleton instance
 LogManager = _LogManager()
