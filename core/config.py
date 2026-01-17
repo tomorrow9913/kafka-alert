@@ -55,6 +55,7 @@ class Settings(BaseSettings):
     KAFKA_BROKERS: List[str] = ["localhost:9092"]
     KAFKA_CONSUMER_GROUP: str = "alert-group"
     KAFKA_MAX_CONCURRENT_TASKS: int = 100
+    KAFKA_DEAD_LETTER_TOPIC: str = "dead-letter-queue"
 
     # Kafka Detailed Configuration
     KAFKA_CONSUMER_CONFIG: KafkaConsumerConfig = KafkaConsumerConfig()
