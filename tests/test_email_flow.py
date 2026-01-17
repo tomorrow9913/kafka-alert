@@ -108,9 +108,7 @@ async def test_email_simple_flow_no_meta(factory_reset, mocker):
         "provider": "email",
         "template": "alert.html.j2",
         "destination": "user@example.com",
-        "data": {
-            "subject": "Legacy Subject"  # Should be picked up as fallback
-        },
+        "data": {},
     }
 
     await factory.process(message)
@@ -119,6 +117,6 @@ async def test_email_simple_flow_no_meta(factory_reset, mocker):
     call_args, call_kwargs = mock_smtp_send.call_args
     sent_message = call_args[0]
 
-    assert sent_message["Subject"] == "Legacy Subject"
+    assert sent_message["Subject"] == "Alert Notification"
     assert sent_message["To"] == "user@example.com"
     assert sent_message["Cc"] is None

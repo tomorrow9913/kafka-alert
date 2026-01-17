@@ -12,25 +12,13 @@ logger = LogManager.get_logger(__name__)
 
 
 class AlertFactory:
-    _instance = None
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(AlertFactory, cls).__new__(cls)
-            cls._instance.initialized = False
-        return cls._instance
-
     def __init__(self):
-        if self.initialized:
-            return
-
         self.renderer = TemplateRenderer()
         self.providers = {
             "discord": DiscordProvider(),
             "slack": SlackProvider(),
             "email": EmailProvider(),
         }
-        self.initialized = True
 
     async def process(self, message: Dict[str, Any]):
         """

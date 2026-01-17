@@ -228,7 +228,7 @@ Email 프로바이더는 템플릿으로 **이메일 본문(Body)**을 생성하
   {
     "provider": "email",
     "destination": ["dev@example.com", "ops@example.com"],
-    "template": "email/alert.html",
+    "template": "email/alert",
     "data": {
       "_mail_meta": {
         "subject": "[긴급] 데이터베이스 연결 시간 초과"

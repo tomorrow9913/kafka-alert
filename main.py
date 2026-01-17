@@ -2,7 +2,7 @@ import asyncio
 
 from core.config import settings
 from utils.logger import LogManager
-from utils.kafka_manager import init_kafka_manager
+from utils.kafka_manager import kafka_manager
 from callback import callbacks
 
 logger = LogManager.get_logger(__name__)
@@ -16,13 +16,7 @@ async def main():
         )
         return
 
-    logger.info("Initializing Kafka manager...")
-    kafka_manager = init_kafka_manager(
-        bootstrap_servers=settings.KAFKA_BROKERS,
-        consumer_group=settings.KAFKA_CONSUMER_GROUP,
-        consumer_config=settings.KAFKA_CONSUMER_CONFIG,
-        producer_config=settings.KAFKA_PRODUCER_CONFIG,
-    )
+    logger.info("Kafka manager initialized.")
 
     all_topic_sub_callbacks = callbacks.pop("all", [])
 
