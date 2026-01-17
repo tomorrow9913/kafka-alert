@@ -39,12 +39,12 @@ async def test_kafka_manager_consumption(mocker):
     mock_consumer_instance.subscribe = MagicMock()  # aiokafka subscribe is sync
     mock_consumer_instance.stop = AsyncMock()
 
-    # Init Manager
     manager = KafkaManager(
         bootstrap_servers=["localhost:9092"],
         consumer_group="test-group",
         consumer_config=KafkaConsumerConfig(),
         producer_config=KafkaProducerConfig(),
+        dlq_topic="test-dlq",
     )
 
     # Register Callback
@@ -84,6 +84,7 @@ async def test_kafka_manager_topic_filtering(mocker):
         consumer_group="test-group",
         consumer_config=KafkaConsumerConfig(),
         producer_config=KafkaProducerConfig(),
+        dlq_topic="test-dlq",
     )
 
     mock_cb1 = AsyncMock()
