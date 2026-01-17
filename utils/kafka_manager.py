@@ -109,9 +109,18 @@ class KafkaManager:
 
                 if msg.topic in self._callbacks:
                     for cb in self._callbacks[msg.topic]:
-                        task = asyncio.create_task(self._execute_callback_safe(cb, msg))
-                        self._running_tasks.add(task)
-                        task.add_done_callback(self._running_tasks.discard)
+                        await self._semaphore.acquire()
+                        try:
+                            task = asyncio.create_task(
+                                self._execute_callback_safe(cb, msg)
+                            )
+                            self._running_tasks.add(task)
+                            task.add_done_callback(self._running_tasks.discard)
+                        except Exception as e:
+                            logger.error(
+                                f"Failed to create processing task for message: {msg!r}. Error: {e}"
+                            )
+                            self._semaphore.release()
 
         except asyncio.CancelledError:
             logger.info("Consumer task cancelled.")
@@ -126,7 +135,6 @@ class KafkaManager:
         self, callback: MessageHandler, msg: ConsumerRecord
     ):
         """Safely executes a callback, manages semaphore, and sends to DLQ on failure."""
-        await self._semaphore.acquire()
         try:
             await callback(msg)
         except Exception:
