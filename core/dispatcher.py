@@ -73,16 +73,6 @@ class NotificationDispatcher:
                     exc_info=True,
                 )
 
-    def _get_default_destination(self, provider_name: str) -> Optional[str]:
-        """Retrieves the default destination for a given provider."""
-        if provider_name == "discord":
-            return settings.DISCORD_WEBHOOK_URL
-        if provider_name == "email":
-            return settings.EMAIL_CONFIG.DEFAULT_TO_EMAIL
-        if provider_name == "slack":
-            return settings.SLACK_WEBHOOK_URL
-        return None
-
     def _get_message_context(self, message: Dict[str, Any]) -> Dict[str, Any]:
         """Extracts the rendering context and metadata from the message data."""
         data = message.get("data", {})
