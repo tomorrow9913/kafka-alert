@@ -31,7 +31,7 @@ async def test_process_success():
 
     # Verify
     mock_provider.apply_template_rules.assert_called_once_with("template")
-    mock_renderer.render.assert_called_once_with("template.txt", {"foo": "bar"})
+    mock_renderer.render.assert_called_once_with("template.txt", {"foo": "bar", "_meta": {}})
     mock_provider.format_payload.assert_called_once_with("rendered content", {})
     mock_provider.send.assert_called_once_with("dest", {"key": "value"})
 
@@ -63,3 +63,39 @@ async def test_process_fallback():
     assert mock_provider.send.call_count == 1
     mock_provider.get_fallback_payload.assert_called_once()
     mock_provider.send.assert_called_once_with("dest", {"error": "message"})
+
+
+@pytest.mark.asyncio
+async def test_process_with_mail_meta():
+    # Setup
+    mock_renderer = MagicMock(spec=TemplateRenderer)
+    mock_provider = MagicMock(spec=BaseProvider)
+    mock_provider.send = AsyncMock(return_value=True)
+
+    mock_renderer.render.return_value = "rendered content"
+    mock_provider.apply_template_rules.return_value = "template.txt"
+    mock_provider.format_payload.return_value = {"key": "value"}
+
+    providers = {"test_provider": mock_provider}
+    dispatcher = NotificationDispatcher(providers, mock_renderer)
+
+    message = {
+        "provider": "test_provider",
+        "template": "template",
+        "destination": "dest",
+        "data": {
+            "foo": "bar",
+            "_mail_meta": {"subject": "Test Subject", "recipients": ["test@example.com"]},
+        },
+    }
+
+    # Execute
+    await dispatcher.process(message)
+
+    # Verify
+    mock_provider.apply_template_rules.assert_called_once_with("template")
+    # The _mail_meta should be removed from data, and only regular data should be passed to render
+    mock_renderer.render.assert_called_once_with("template.txt", {"foo": "bar", "_meta": {"subject": "Test Subject", "recipients": ["test@example.com"]}})
+    # The metadata should be extracted and passed to format_payload
+    mock_provider.format_payload.assert_called_once_with("rendered content", {"subject": "Test Subject", "recipients": ["test@example.com"]})
+    mock_provider.send.assert_called_once_with("dest", {"key": "value"})
