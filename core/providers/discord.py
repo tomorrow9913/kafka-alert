@@ -21,12 +21,16 @@ class DiscordProvider(BaseProvider):
     def get_fallback_payload(
         self, error: Exception, context: Dict[str, Any]
     ) -> Union[Dict[str, Any], str]:
+        import json
+
+        context_str = json.dumps(context, indent=2, ensure_ascii=False)
         return {
             "content": f"🚨 **Error processing Kafka message:**\n"
             f"**Topic:** {context.get('topic', 'N/A')}\n"
             f"**Partition:** {context.get('partition', 'N/A')}\n"
             f"**Offset:** {context.get('offset', 'N/A')}\n"
-            f"**Error:** ```{error}```"
+            f"**Error:** ```{error}```\n"
+            f"**Original Data:** ```json\n{context_str}\n```"
         }
 
     async def send(

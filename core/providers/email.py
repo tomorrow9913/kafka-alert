@@ -34,13 +34,18 @@ class EmailProvider(BaseProvider):
     def get_fallback_payload(
         self, error: Exception, context: Dict[str, Any]
     ) -> Union[Dict[str, Any], str]:
+        import json
+
         subject = f"🚨 Kafka Alert Error on Topic {context.get('topic', 'N/A')}"
+        context_str = json.dumps(context, indent=2, ensure_ascii=False)
         body = (
             f"<h1>An error occurred while processing a Kafka message.</h1>"
             f"<p><strong>Topic:</strong> {context.get('topic', 'N/A')}</p>"
             f"<p><strong>Partition:</strong> {context.get('partition', 'N/A')}</p>"
             f"<p><strong>Offset:</strong> {context.get('offset', 'N/A')}</p>"
             f"<p><strong>Error:</strong> <pre>{error}</pre></p>"
+            f"<h2>Original Data:</h2>"
+            f"<pre>{context_str}</pre>"
         )
         return {"subject": subject, "body": body}
 
