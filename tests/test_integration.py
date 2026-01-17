@@ -69,9 +69,6 @@ async def test_kafka_manager_consumption_with_dispatcher(mocker):
 
     # Verify that dispatcher.process was called
     mock_dispatcher.process.assert_called_once_with(record_value)
-    # Ensure the original mock_callback is not called
-    # (since we replaced it with test_callback using the dispatcher)
-    # mock_callback.assert_not_called()
 
 
 @pytest.mark.asyncio
