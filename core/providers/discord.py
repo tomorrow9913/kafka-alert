@@ -26,8 +26,6 @@ class DiscordProvider(BaseProvider):
     def get_fallback_payload(
         self, error: Exception, context: Dict[str, Any]
     ) -> Union[Dict[str, Any], str]:
-        import json
-
         context_str = json.dumps(context, indent=2, ensure_ascii=False)
         return {
             "content": f"🚨 **Error processing Kafka message:**\n"
