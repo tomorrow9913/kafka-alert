@@ -21,7 +21,12 @@ class SlackProvider(BaseProvider):
     ) -> Union[Dict[str, Any], str]:
         if isinstance(rendered_content, dict):
             return rendered_content
-        return json.loads(rendered_content)
+        try:
+            return json.loads(rendered_content)
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to decode rendered Slack template as JSON: {e}")
+            context = metadata if isinstance(metadata, dict) else {"metadata": metadata}
+            return self.get_fallback_payload(e, context)
 
     def get_fallback_payload(
         self, error: Exception, context: Dict[str, Any]

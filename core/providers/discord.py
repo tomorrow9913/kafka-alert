@@ -21,7 +21,16 @@ class DiscordProvider(BaseProvider):
     ) -> Union[Dict[str, Any], str]:
         if isinstance(rendered_content, dict):
             return rendered_content
-        return json.loads(rendered_content)
+        try:
+            return json.loads(rendered_content)
+        except json.JSONDecodeError as e:
+            logger.error(
+                "Failed to decode rendered Discord payload as JSON: %s; content=%r",
+                e,
+                rendered_content,
+            )
+            # Fallback: return the original string; downstream send() will validate type.
+            return rendered_content
 
     def get_fallback_payload(
         self, error: Exception, context: Dict[str, Any]

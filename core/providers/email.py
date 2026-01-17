@@ -1,6 +1,7 @@
 from typing import Dict, Any, Union, List, Optional
 from email.message import EmailMessage
 import aiosmtplib
+import json
 
 from .base import BaseProvider
 from utils.logger import LogManager
@@ -24,21 +25,18 @@ class EmailProvider(BaseProvider):
             logger.error("EmailProvider requires a string to be rendered.")
             return {"subject": "Error", "body": ""}
 
-        subject = metadata.get("subject")
-        if subject:
-            body = rendered_content
-        else:
-            # Fallback to using the first line as the subject
-            parts = rendered_content.split("\n", 1)
-            subject = parts[0].strip()
-            body = parts[1].strip() if len(parts) > 1 else ""
+        subject = (
+            metadata.get("subject")
+            or settings.EMAIL_CONFIG.DEFAULT_SUBJECT
+            or "Kafka Alert"
+        )
+        body = rendered_content
 
         return {"subject": subject, "body": body, "meta": metadata}
 
     def get_fallback_payload(
         self, error: Exception, context: Dict[str, Any]
     ) -> Union[Dict[str, Any], str]:
-
         subject = f"🚨 Kafka Alert Error on Topic {context.get('topic', 'N/A')}"
         context_str = json.dumps(context, indent=2, ensure_ascii=False)
         body = (
