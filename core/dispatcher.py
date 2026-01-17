@@ -80,10 +80,20 @@ class NotificationDispatcher:
 
     def _get_message_context(self, message: Dict[str, Any]) -> Dict[str, Any]:
         """Extracts the rendering context and metadata from the message data."""
+        # Extract Kafka metadata if present
+        kafka_meta = message.get("_kafka_meta", {})
+        
         data = message.get("data", {})
         if isinstance(data, dict):
             meta = data.pop("_mail_meta", {})
             context = {k: v for k, v in data.items() if not k.startswith("_")}
             context["_meta"] = meta
+            # Add Kafka metadata to context for fallback payloads
+            if kafka_meta:
+                context.update({
+                    "topic": kafka_meta.get("topic"),
+                    "partition": kafka_meta.get("partition"),
+                    "offset": kafka_meta.get("offset"),
+                })
             return context
-        return {"data": data}
+        return {"data": data, **kafka_meta}
