@@ -26,8 +26,6 @@ class SlackProvider(BaseProvider):
     def get_fallback_payload(
         self, error: Exception, context: Dict[str, Any]
     ) -> Union[Dict[str, Any], str]:
-        import json
-
         context_str = json.dumps(context, indent=2, ensure_ascii=False)
         return {
             "text": f"🚨 Error processing Kafka message on topic {context.get('topic', 'N/A')}",
