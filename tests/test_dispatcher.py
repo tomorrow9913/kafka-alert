@@ -93,9 +93,17 @@ async def test_process_with_mail_meta():
     await dispatcher.process(message)
 
     # Verify
+    expected_context = {
+        "foo": "bar",
+        "_meta": {"subject": "Test Subject", "recipients": ["test@example.com"]},
+    }
+    expected_metadata = {"subject": "Test Subject", "recipients": ["test@example.com"]}
+
     mock_provider.apply_template_rules.assert_called_once_with("template")
     # The _mail_meta should be removed from data, and only regular data should be passed to render
-    mock_renderer.render.assert_called_once_with("template.txt", {"foo": "bar", "_meta": {"subject": "Test Subject", "recipients": ["test@example.com"]}})
+    mock_renderer.render.assert_called_once_with("template.txt", expected_context)
     # The metadata should be extracted and passed to format_payload
-    mock_provider.format_payload.assert_called_once_with("rendered content", {"subject": "Test Subject", "recipients": ["test@example.com"]})
+    mock_provider.format_payload.assert_called_once_with(
+        "rendered content", expected_metadata
+    )
     mock_provider.send.assert_called_once_with("dest", {"key": "value"})
