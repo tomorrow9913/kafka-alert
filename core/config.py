@@ -63,6 +63,7 @@ class Settings(BaseSettings):
 
     # Provider Configurations
     DISCORD_WEBHOOK_URL: Optional[str] = None
+    SLACK_WEBHOOK_URL: Optional[str] = None
     EMAIL_CONFIG: EmailConfig = EmailConfig()
 
     model_config = SettingsConfigDict(

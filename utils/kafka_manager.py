@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
 import asyncio
 import json
 from collections import defaultdict
-from typing import Awaitable, Callable, Optional
+from typing import Awaitable, Callable, Optional, Any
 
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer, ConsumerRecord
 
@@ -16,7 +15,7 @@ from core.config import (
 logger = LogManager.get_logger("kafka")
 
 # Type hint for the callback function
-MessageHandler = Callable[[ConsumerRecord], Awaitable[None]]
+MessageHandler = Callable[[ConsumerRecord, Optional[Any]], Awaitable[None]]
 
 
 def _safe_json_deserializer(value: bytes) -> Optional[dict]:
@@ -43,13 +42,13 @@ class KafkaManager:
         consumer_group: str,
         consumer_config: KafkaConsumerConfig,
         producer_config: KafkaProducerConfig,
-        dlq_topic: str,
+        callback_context: Optional[Any] = None,
     ):
         self._bootstrap_servers = bootstrap_servers
         self._consumer_group = consumer_group
         self._consumer_config = consumer_config
         self._producer_config = producer_config
-        self._dlq_topic = dlq_topic
+        self.callback_context = callback_context
 
         self.producer: Optional[AIOKafkaProducer] = None
         self.consumer: Optional[AIOKafkaConsumer] = None
@@ -136,26 +135,12 @@ class KafkaManager:
     ):
         """Safely executes a callback, manages semaphore, and sends to DLQ on failure."""
         try:
-            await callback(msg)
-        except Exception:
-            logger.exception(
-                f"Error executing callback '{callback.__name__}' for topic '{msg.topic}'. Sending to DLQ."
+            await callback(msg, self.callback_context)
+        except Exception as e:
+            logger.error(
+                f"Error executing callback '{callback.__name__}' for topic '{msg.topic}': {e}",
+                exc_info=True,
             )
-            try:
-                # Prepare DLQ message
-                dlq_message = {
-                    "original_topic": msg.topic,
-                    "original_partition": msg.partition,
-                    "original_offset": msg.offset,
-                    "original_key": msg.key.decode("utf-8") if msg.key else None,
-                    "original_value": msg.value,
-                    "original_timestamp": msg.timestamp,
-                }
-                await self.send_message(self._dlq_topic, dlq_message)
-            except Exception as e_dlq:
-                logger.error(
-                    f"Failed to send message to DLQ topic '{self._dlq_topic}': {e_dlq}"
-                )
         finally:
             # Always release the semaphore
             self._semaphore.release()
@@ -278,10 +263,37 @@ class KafkaManager:
             raise
 
 
-kafka_manager = KafkaManager(
-    bootstrap_servers=settings.KAFKA_BROKERS,
-    consumer_group=settings.KAFKA_CONSUMER_GROUP,
-    consumer_config=settings.KAFKA_CONSUMER_CONFIG,
-    producer_config=settings.KAFKA_PRODUCER_CONFIG,
-    dlq_topic=settings.KAFKA_DEAD_LETTER_TOPIC,
-)
+_kafka_manager_instance: Optional[KafkaManager] = None
+
+
+def init_kafka_manager(
+    bootstrap_servers: list[str],
+    consumer_group: str,
+    consumer_config: KafkaConsumerConfig = KafkaConsumerConfig(),
+    producer_config: KafkaProducerConfig = KafkaProducerConfig(),
+    callback_context: Optional[Any] = None,
+) -> KafkaManager:
+    """Creates and initializes the KafkaManager instance at application startup."""
+    global _kafka_manager_instance
+    if _kafka_manager_instance is not None:
+        logger.warning("KafkaManager is already initialized.")
+        return _kafka_manager_instance
+
+    _kafka_manager_instance = KafkaManager(
+        bootstrap_servers=bootstrap_servers,
+        consumer_group=consumer_group,
+        consumer_config=consumer_config,
+        producer_config=producer_config,
+        callback_context=callback_context,
+    )
+    logger.info("KafkaManager initialized.")
+    return _kafka_manager_instance
+
+
+def get_kafka_manager() -> KafkaManager:
+    """Returns the initialized KafkaManager instance."""
+    if _kafka_manager_instance is None:
+        raise RuntimeError(
+            "KafkaManager is not initialized. Call init_kafka_manager() first."
+        )
+    return _kafka_manager_instance
