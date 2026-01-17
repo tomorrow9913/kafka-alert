@@ -4,6 +4,11 @@ from core.config import settings
 from utils.logger import LogManager
 from utils.kafka_manager import init_kafka_manager
 from callback import callbacks
+from core.dispatcher import NotificationDispatcher
+from core.renderer import TemplateRenderer
+from core.providers.discord import DiscordProvider
+from core.providers.slack import SlackProvider
+from core.providers.email import EmailProvider
 
 logger = LogManager.get_logger(__name__)
 
@@ -16,12 +21,22 @@ async def main():
         )
         return
 
+    # 1. Initialize dependencies
+    renderer = TemplateRenderer()
+    providers = {
+        "discord": DiscordProvider(),
+        "slack": SlackProvider(),
+        "email": EmailProvider(),
+    }
+    dispatcher = NotificationDispatcher(providers, renderer)
+
     logger.info("Initializing Kafka manager...")
     kafka_manager = init_kafka_manager(
         bootstrap_servers=settings.KAFKA_BROKERS,
         consumer_group=settings.KAFKA_CONSUMER_GROUP,
         consumer_config=settings.KAFKA_CONSUMER_CONFIG,
         producer_config=settings.KAFKA_PRODUCER_CONFIG,
+        callback_context=dispatcher,
     )
 
     all_topic_sub_callbacks = callbacks.pop("all", [])

@@ -1,12 +1,78 @@
 import aiohttp
-from typing import Dict, Any, Union, List
+import json
+from typing import Dict, Any, Union, List, Optional
 from .base import BaseProvider
 from utils.logger import LogManager
+from core.config import settings
 
 logger = LogManager.get_logger(__name__)
 
 
 class SlackProvider(BaseProvider):
+    @property
+    def default_destination(self) -> Optional[str]:
+        return settings.SLACK_WEBHOOK_URL
+
+    def apply_template_rules(self, template_name: str) -> str:
+        return f"{template_name}.json.j2"
+
+    def format_payload(
+        self, rendered_content: Union[Dict[str, Any], str], metadata: Dict[str, Any]
+    ) -> Union[Dict[str, Any], str]:
+        if isinstance(rendered_content, dict):
+            return rendered_content
+        try:
+            return json.loads(rendered_content)
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to decode rendered Slack template as JSON: {e}")
+            context = metadata if isinstance(metadata, dict) else {"metadata": metadata}
+            return self.get_fallback_payload(e, context)
+
+    def get_fallback_payload(
+        self, error: Exception, context: Dict[str, Any]
+    ) -> Union[Dict[str, Any], str]:
+        context_str = json.dumps(context, indent=2, ensure_ascii=False)
+        return {
+            "text": f"🚨 Error processing Kafka message on topic {context.get('topic', 'N/A')}",
+            "blocks": [
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": "An error occurred while processing a Kafka message.",
+                    },
+                },
+                {
+                    "type": "section",
+                    "fields": [
+                        {
+                            "type": "mrkdwn",
+                            "text": f"*Topic:*\n{context.get('topic', 'N/A')}",
+                        },
+                        {
+                            "type": "mrkdwn",
+                            "text": f"*Partition:*\n{context.get('partition', 'N/A')}",
+                        },
+                        {
+                            "type": "mrkdwn",
+                            "text": f"*Offset:*\n{context.get('offset', 'N/A')}",
+                        },
+                    ],
+                },
+                {
+                    "type": "section",
+                    "text": {"type": "mrkdwn", "text": f"*Error:*\n```{error}```"},
+                },
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": f"*Original Data:*\n```json\n{context_str}\n```",
+                    },
+                },
+            ],
+        }
+
     async def send(
         self, destination: Union[str, List[str]], payload: Union[Dict[str, Any], str]
     ) -> bool:

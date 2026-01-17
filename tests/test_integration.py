@@ -3,10 +3,11 @@ from unittest.mock import AsyncMock, MagicMock
 from aiokafka import ConsumerRecord
 from utils.kafka_manager import KafkaManager
 from core.config import KafkaConsumerConfig, KafkaProducerConfig
+from core.dispatcher import NotificationDispatcher
 
 
 @pytest.mark.asyncio
-async def test_kafka_manager_consumption(mocker):
+async def test_kafka_manager_consumption_with_dispatcher(mocker):
     # Mock AIOKafkaConsumer
     mock_consumer_cls = mocker.patch("utils.kafka_manager.AIOKafkaConsumer")
     mock_consumer_instance = AsyncMock()
@@ -15,8 +16,12 @@ async def test_kafka_manager_consumption(mocker):
     # Mock Producer
     mocker.patch("utils.kafka_manager.AIOKafkaProducer", return_value=AsyncMock())
 
+    # Mock NotificationDispatcher
+    mock_dispatcher = AsyncMock(spec=NotificationDispatcher)
+    mock_dispatcher.process = AsyncMock()
+
     # Mock Consumer iteration
-    # We provide a dict value simulating successful deserialization
+    record_value = {"provider": "discord", "template": "test", "data": {"foo": "bar"}}
     record = ConsumerRecord(
         topic="test-topic",
         partition=0,
@@ -24,7 +29,7 @@ async def test_kafka_manager_consumption(mocker):
         timestamp=0,
         timestamp_type=0,
         key=b"key",
-        value={"test": "data"},
+        value=record_value,
         headers=[],
         checksum=0,
         serialized_key_size=0,
@@ -36,20 +41,24 @@ async def test_kafka_manager_consumption(mocker):
 
     mock_consumer_instance.__aiter__.side_effect = lambda: async_iter()
     mock_consumer_instance.topics = AsyncMock(return_value={"test-topic"})
-    mock_consumer_instance.subscribe = MagicMock()  # aiokafka subscribe is sync
+    mock_consumer_instance.subscribe = MagicMock()
     mock_consumer_instance.stop = AsyncMock()
 
-    # Init Manager
+    # Init Manager, passing the mock_dispatcher as callback_context
     manager = KafkaManager(
         bootstrap_servers=["localhost:9092"],
         consumer_group="test-group",
         consumer_config=KafkaConsumerConfig(),
         producer_config=KafkaProducerConfig(),
+        callback_context=mock_dispatcher,
     )
 
-    # Register Callback
-    mock_callback = AsyncMock()
-    manager.register_callback("test-topic", mock_callback)
+    # Register Callback that uses the context
+    async def test_callback(msg: ConsumerRecord, context: NotificationDispatcher):
+        if msg.value:
+            await context.process(msg.value)
+
+    manager.register_callback("test-topic", test_callback)
 
     # Start
     await manager.start()
@@ -58,12 +67,8 @@ async def test_kafka_manager_consumption(mocker):
     if manager.consumer_task:
         await manager.consumer_task
 
-    # Verify
-    mock_callback.assert_called_once()
-    args = mock_callback.call_args[0]
-    msg = args[0]
-    assert msg.topic == "test-topic"
-    assert msg.value == {"test": "data"}
+    # Verify that dispatcher.process was called
+    mock_dispatcher.process.assert_called_once_with(record_value)
 
 
 @pytest.mark.asyncio
