@@ -38,7 +38,6 @@ class EmailProvider(BaseProvider):
     def get_fallback_payload(
         self, error: Exception, context: Dict[str, Any]
     ) -> Union[Dict[str, Any], str]:
-        import json
 
         subject = f"🚨 Kafka Alert Error on Topic {context.get('topic', 'N/A')}"
         context_str = json.dumps(context, indent=2, ensure_ascii=False)
