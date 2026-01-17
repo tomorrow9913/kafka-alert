@@ -1,4 +1,5 @@
 import aiohttp
+import json
 from typing import Dict, Any, Union, List
 from .base import BaseProvider
 from utils.logger import LogManager
@@ -7,6 +8,53 @@ logger = LogManager.get_logger(__name__)
 
 
 class SlackProvider(BaseProvider):
+    def apply_template_rules(self, template_name: str) -> str:
+        return f"{template_name}.json.j2"
+
+    def format_payload(
+        self, rendered_content: Union[Dict[str, Any], str], metadata: Dict[str, Any]
+    ) -> Union[Dict[str, Any], str]:
+        if isinstance(rendered_content, dict):
+            return rendered_content
+        return json.loads(rendered_content)
+
+    def get_fallback_payload(
+        self, error: Exception, context: Dict[str, Any]
+    ) -> Union[Dict[str, Any], str]:
+        return {
+            "text": f"🚨 Error processing Kafka message on topic {context.get('topic', 'N/A')}",
+            "blocks": [
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": "An error occurred while processing a Kafka message.",
+                    },
+                },
+                {
+                    "type": "fields",
+                    "fields": [
+                        {
+                            "type": "mrkdwn",
+                            "text": f"*Topic:*\n{context.get('topic', 'N/A')}",
+                        },
+                        {
+                            "type": "mrkdwn",
+                            "text": f"*Partition:*\n{context.get('partition', 'N/A')}",
+                        },
+                        {
+                            "type": "mrkdwn",
+                            "text": f"*Offset:*\n{context.get('offset', 'N/A')}",
+                        },
+                    ],
+                },
+                {
+                    "type": "section",
+                    "text": {"type": "mrkdwn", "text": f"*Error:*\n```{error}```"},
+                },
+            ],
+        }
+
     async def send(
         self, destination: Union[str, List[str]], payload: Union[Dict[str, Any], str]
     ) -> bool:
