@@ -26,6 +26,15 @@ async def callback(msg: ConsumerRecord, context: Optional[Any] = None):
         f"Received message on topic '{msg.topic}'. Processing with NotificationDispatcher..."
     )
     if msg.value:
-        await dispatcher.process(msg.value)
+        # Enrich the message with Kafka metadata
+        enriched_message = {
+            **msg.value,
+            "_kafka_meta": {
+                "topic": msg.topic,
+                "partition": msg.partition,
+                "offset": msg.offset,
+            }
+        }
+        await dispatcher.process(enriched_message)
     else:
         logger.warning(f"Skipping message with empty value on topic '{msg.topic}'.")
