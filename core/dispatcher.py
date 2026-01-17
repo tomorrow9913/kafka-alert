@@ -38,11 +38,16 @@ class NotificationDispatcher:
             logger.error(f"No destination found for provider '{provider_name}'.")
             return
 
+        template_name = message.get("template")
+        if not template_name:
+            logger.error(f"Invalid or missing template for provider '{provider_name}'.")
+            return
+
         context = self._get_message_context(message)
 
         try:
             # 1. Apply template rules
-            template_name = provider.apply_template_rules(message["template"])
+            template_name = provider.apply_template_rules(template_name)
 
             # 2. Render template
             rendered_content = self.renderer.render(template_name, context)
