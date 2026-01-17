@@ -38,7 +38,7 @@ class SlackProvider(BaseProvider):
                     },
                 },
                 {
-                    "type": "fields",
+                    "type": "section",
                     "fields": [
                         {
                             "type": "mrkdwn",
