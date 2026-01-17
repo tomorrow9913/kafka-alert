@@ -1,6 +1,7 @@
 from typing import Dict, Any, Union, List, Optional
 from email.message import EmailMessage
 import aiosmtplib
+import json
 
 from .base import BaseProvider
 from utils.logger import LogManager
