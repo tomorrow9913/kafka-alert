@@ -55,6 +55,7 @@ class KafkaManager:
         self.consumer: Optional[AIOKafkaConsumer] = None
         self._consumer_task: Optional[asyncio.Task[None]] = None
         self._callbacks: dict[str, list[MessageHandler]] = defaultdict(list)
+        self._running_tasks: set[asyncio.Task] = set()
 
         # Semaphore for concurrency control
         self._semaphore = asyncio.Semaphore(settings.KAFKA_MAX_CONCURRENT_TASKS)
@@ -108,9 +109,18 @@ class KafkaManager:
 
                 if msg.topic in self._callbacks:
                     for cb in self._callbacks[msg.topic]:
-                        # Acquire semaphore before creating task
                         await self._semaphore.acquire()
-                        asyncio.create_task(self._execute_callback_safe(cb, msg))
+                        try:
+                            task = asyncio.create_task(
+                                self._execute_callback_safe(cb, msg)
+                            )
+                            self._running_tasks.add(task)
+                            task.add_done_callback(self._running_tasks.discard)
+                        except Exception as e:
+                            logger.error(
+                                f"Failed to create processing task for message: {msg!r}. Error: {e}"
+                            )
+                            self._semaphore.release()
 
         except asyncio.CancelledError:
             logger.info("Consumer task cancelled.")
@@ -124,7 +134,7 @@ class KafkaManager:
     async def _execute_callback_safe(
         self, callback: MessageHandler, msg: ConsumerRecord
     ):
-        """Safely executes a callback and sends to DLQ on failure."""
+        """Safely executes a callback, manages semaphore, and sends to DLQ on failure."""
         try:
             await callback(msg)
         except Exception:
@@ -226,6 +236,13 @@ class KafkaManager:
                 await self._consumer_task
             except asyncio.CancelledError:
                 logger.info("Consumer task has been successfully cancelled.")
+
+        if self._running_tasks:
+            logger.info(
+                f"Waiting for {len(self._running_tasks)} outstanding tasks to complete..."
+            )
+            await asyncio.gather(*self._running_tasks, return_exceptions=True)
+            logger.info("All outstanding tasks have completed.")
 
         if self.consumer:
             await self.consumer.stop()
