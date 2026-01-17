@@ -1,13 +1,18 @@
 import aiohttp
 import json
-from typing import Dict, Any, Union, List
+from typing import Dict, Any, Union, List, Optional
 from .base import BaseProvider
 from utils.logger import LogManager
+from core.config import settings
 
 logger = LogManager.get_logger(__name__)
 
 
 class SlackProvider(BaseProvider):
+    @property
+    def default_destination(self) -> Optional[str]:
+        return settings.SLACK_WEBHOOK_URL
+
     def apply_template_rules(self, template_name: str) -> str:
         return f"{template_name}.json.j2"
 

@@ -1,4 +1,4 @@
-from typing import Dict, Any, Union, List
+from typing import Dict, Any, Union, List, Optional
 from email.message import EmailMessage
 import aiosmtplib
 
@@ -10,6 +10,10 @@ logger = LogManager.get_logger(__name__)
 
 
 class EmailProvider(BaseProvider):
+    @property
+    def default_destination(self) -> Optional[str]:
+        return settings.EMAIL_CONFIG.DEFAULT_TO_EMAIL
+
     def apply_template_rules(self, template_name: str) -> str:
         return f"{template_name}.html.j2"
 

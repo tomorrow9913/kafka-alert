@@ -32,9 +32,7 @@ class NotificationDispatcher:
             return
 
         provider = self.providers[provider_name]
-        destination = message.get("destination") or self._get_default_destination(
-            provider_name
-        )
+        destination = message.get("destination") or provider.default_destination
 
         if not destination:
             logger.error(f"No destination found for provider '{provider_name}'.")

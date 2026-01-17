@@ -1,8 +1,18 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Union, List
+from typing import Dict, Any, Union, List, Optional
 
 
 class BaseProvider(ABC):
+    @property
+    def default_destination(self) -> Optional[str]:
+        """
+        Get the default destination for the provider.
+
+        Returns:
+            Optional[str]: The default destination.
+        """
+        return None
+
     @abstractmethod
     def apply_template_rules(self, template_name: str) -> str:
         """
