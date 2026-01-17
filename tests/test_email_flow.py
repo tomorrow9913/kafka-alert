@@ -6,9 +6,9 @@ from core.providers.email import EmailProvider
 
 
 @pytest.mark.asyncio
-async def test_email_full_flow(mocker):
+async def test_email_full_flow_with_meta(mocker):
     """
-    Test the full flow from Dispatcher to EmailProvider.
+    Test the full flow from Dispatcher to EmailProvider with CC and BCC.
     """
     # Setup
     mock_renderer = MagicMock(spec=TemplateRenderer)
@@ -19,13 +19,20 @@ async def test_email_full_flow(mocker):
     providers = {"email": email_provider}
     dispatcher = NotificationDispatcher(providers, mock_renderer)
 
-    mock_renderer.render.return_value = "Test Subject\n<html>Rendered Content</html>"
+    mock_renderer.render.return_value = "<html>Rendered Content</html>"
 
     message = {
         "provider": "email",
         "template": "alert",
         "destination": "user@example.com",
-        "data": {"foo": "bar"},
+        "data": {
+            "_mail_meta": {
+                "subject": "Test Subject from Meta",
+                "cc": ["cc@example.com"],
+                "bcc": ["bcc@example.com"],
+            },
+            "foo": "bar",
+        },
     }
 
     # Execute
@@ -36,10 +43,15 @@ async def test_email_full_flow(mocker):
     provider_dest, provider_payload = spy_send.call_args[0]
 
     assert provider_dest == "user@example.com"
-    assert provider_payload["subject"] == "Test Subject"
+    assert provider_payload["subject"] == "Test Subject from Meta"
     assert provider_payload["body"] == "<html>Rendered Content</html>"
+    assert provider_payload["meta"]["cc"] == ["cc@example.com"]
 
     mock_smtp_send.assert_called_once()
     sent_message = mock_smtp_send.call_args[0][0]
-    assert sent_message["Subject"] == "Test Subject"
+    recipients = mock_smtp_send.call_args[1]["recipients"]
+    assert sent_message["Subject"] == "Test Subject from Meta"
     assert sent_message["To"] == "user@example.com"
+    assert sent_message["Cc"] == "cc@example.com"
+    assert "bcc" not in sent_message  # BCC should not be in headers
+    assert set(recipients) == {"user@example.com", "cc@example.com", "bcc@example.com"}

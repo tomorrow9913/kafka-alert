@@ -86,8 +86,11 @@ class NotificationDispatcher:
         return None
 
     def _get_message_context(self, message: Dict[str, Any]) -> Dict[str, Any]:
-        """Extracts the rendering context from the message data."""
+        """Extracts the rendering context and metadata from the message data."""
         data = message.get("data", {})
         if isinstance(data, dict):
-            return {k: v for k, v in data.items() if not k.startswith("_")}
+            meta = data.pop("_mail_meta", {})
+            context = {k: v for k, v in data.items() if not k.startswith("_")}
+            context["_meta"] = meta
+            return context
         return {"data": data}

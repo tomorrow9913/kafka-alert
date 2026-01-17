@@ -19,11 +19,17 @@ class EmailProvider(BaseProvider):
         if not isinstance(rendered_content, str):
             logger.error("EmailProvider requires a string to be rendered.")
             return {"subject": "Error", "body": ""}
-        # Assumes the first line is the subject
-        parts = rendered_content.split("\n", 1)
-        subject = parts[0].strip()
-        body = parts[1].strip() if len(parts) > 1 else ""
-        return {"subject": subject, "body": body}
+
+        subject = metadata.get("subject")
+        if subject:
+            body = rendered_content
+        else:
+            # Fallback to using the first line as the subject
+            parts = rendered_content.split("\n", 1)
+            subject = parts[0].strip()
+            body = parts[1].strip() if len(parts) > 1 else ""
+
+        return {"subject": subject, "body": body, "meta": metadata}
 
     def get_fallback_payload(
         self, error: Exception, context: Dict[str, Any]
@@ -46,7 +52,7 @@ class EmailProvider(BaseProvider):
 
         Args:
             destination: Target email address.
-            payload: Dict containing 'subject' and 'body'.
+            payload: Dict containing 'subject', 'body', and 'meta'.
         """
         if (
             not isinstance(payload, dict)
@@ -60,14 +66,28 @@ class EmailProvider(BaseProvider):
 
         subject = payload["subject"]
         body = payload["body"]
+        meta = payload.get("meta", {})
 
         message = EmailMessage()
         message["From"] = settings.EMAIL_CONFIG.DEFAULT_FROM_EMAIL
+
+        # To
         if isinstance(destination, list):
-            destination_str = ",".join(destination)
+            to_emails = destination
         else:
-            destination_str = destination
-        message["To"] = destination_str
+            to_emails = [destination]
+        message["To"] = ", ".join(to_emails)
+
+        # Cc
+        cc_emails = meta.get("cc", [])
+        if cc_emails:
+            message["Cc"] = ", ".join(cc_emails)
+
+        # Bcc
+        bcc_emails = meta.get("bcc", [])
+
+        all_recipients = to_emails + cc_emails + bcc_emails
+
         message["Subject"] = subject
         message.set_content(body, subtype="html")
 
@@ -78,6 +98,7 @@ class EmailProvider(BaseProvider):
 
             await aiosmtplib.send(
                 message,
+                recipients=all_recipients,
                 hostname=settings.EMAIL_CONFIG.SMTP_HOST,
                 port=settings.EMAIL_CONFIG.SMTP_PORT,
                 username=settings.EMAIL_CONFIG.SMTP_USER,
@@ -85,9 +106,9 @@ class EmailProvider(BaseProvider):
                 use_tls=settings.EMAIL_CONFIG.USE_TLS,
             )
 
-            logger.info(f"Email sent successfully to {destination}")
+            logger.info(f"Email sent successfully to {all_recipients}")
             return True
 
         except Exception as e:
-            logger.error(f"Failed to send email to {destination}: {e}")
+            logger.error(f"Failed to send email to {all_recipients}: {e}")
             return False
