@@ -62,15 +62,15 @@ def test_apply_template_rules():
     Test that apply_template_rules correctly appends the .html.j2 extension.
     """
     email_provider = EmailProvider()
-    
+
     # Test with simple template name
     result = email_provider.apply_template_rules("alert")
     assert result == "alert.html.j2"
-    
+
     # Test with template name containing path
     result = email_provider.apply_template_rules("notifications/error")
     assert result == "notifications/error.html.j2"
-    
+
     # Test with empty string
     result = email_provider.apply_template_rules("")
     assert result == ".html.j2"
@@ -81,16 +81,16 @@ def test_format_payload_with_subject_in_metadata():
     Test format_payload when subject is provided in metadata.
     """
     email_provider = EmailProvider()
-    
+
     rendered_content = "<html><body>Email body content</body></html>"
     metadata = {
         "subject": "Test Subject",
         "cc": ["cc@example.com"],
         "bcc": ["bcc@example.com"],
     }
-    
+
     result = email_provider.format_payload(rendered_content, metadata)
-    
+
     assert result["subject"] == "Test Subject"
     assert result["body"] == "<html><body>Email body content</body></html>"
     assert result["meta"]["subject"] == "Test Subject"
@@ -98,53 +98,58 @@ def test_format_payload_with_subject_in_metadata():
     assert result["meta"]["bcc"] == ["bcc@example.com"]
 
 
-def test_format_payload_extract_subject_from_first_line():
+def test_format_payload_uses_default_subject_from_config():
     """
-    Test format_payload extracts subject from first line when not in metadata.
-    This is the edge case mentioned in the review feedback.
+    Test format_payload uses default subject from config when not in metadata.
     """
     email_provider = EmailProvider()
-    
-    # Test with multiline HTML content
-    rendered_content = "Alert: System Error\n<html><body>Error details here</body></html>"
+
+    rendered_content = (
+        "Alert: System Error\n<html><body>Error details here</body></html>"
+    )
     metadata = {}
-    
+
     result = email_provider.format_payload(rendered_content, metadata)
-    
-    assert result["subject"] == "Alert: System Error"
-    assert result["body"] == "<html><body>Error details here</body></html>"
+
+    from core.config import settings
+
+    assert result["subject"] == settings.EMAIL_CONFIG.DEFAULT_SUBJECT
+    assert result["body"] == rendered_content
     assert result["meta"] == {}
 
 
-def test_format_payload_extract_subject_single_line():
+def test_format_payload_uses_hardcoded_fallback_when_config_is_empty(mocker):
     """
-    Test format_payload when content is only a single line (no body).
+    Test format_payload uses hardcoded subject when config default is empty.
     """
+    mocker.patch("core.providers.email.settings.EMAIL_CONFIG.DEFAULT_SUBJECT", "")
     email_provider = EmailProvider()
-    
+
     rendered_content = "Single Line Subject"
     metadata = {}
-    
+
     result = email_provider.format_payload(rendered_content, metadata)
-    
-    assert result["subject"] == "Single Line Subject"
-    assert result["body"] == ""
+
+    assert result["subject"] == "Kafka Alert"
+    assert result["body"] == rendered_content
     assert result["meta"] == {}
 
 
-def test_format_payload_extract_subject_with_whitespace():
+def test_format_payload_body_is_not_split():
     """
-    Test format_payload strips whitespace when extracting subject and body.
+    Test format_payload does not split the body and uses default subject.
     """
     email_provider = EmailProvider()
-    
+
     rendered_content = "  Subject with spaces  \n  Body with spaces  "
     metadata = {}
-    
+
     result = email_provider.format_payload(rendered_content, metadata)
-    
-    assert result["subject"] == "Subject with spaces"
-    assert result["body"] == "Body with spaces"
+
+    from core.config import settings
+
+    assert result["subject"] == settings.EMAIL_CONFIG.DEFAULT_SUBJECT
+    assert result["body"] == rendered_content
 
 
 def test_format_payload_invalid_type():
@@ -152,13 +157,13 @@ def test_format_payload_invalid_type():
     Test format_payload handles non-string rendered content.
     """
     email_provider = EmailProvider()
-    
+
     # Test with dict instead of string
     rendered_content = {"key": "value"}
     metadata = {"subject": "Test"}
-    
+
     result = email_provider.format_payload(rendered_content, metadata)
-    
+
     assert result["subject"] == "Error"
     assert result["body"] == ""
 
@@ -168,7 +173,7 @@ def test_get_fallback_payload_basic():
     Test get_fallback_payload generates correct error notification.
     """
     email_provider = EmailProvider()
-    
+
     error = Exception("Template rendering failed")
     context = {
         "topic": "alerts",
@@ -177,9 +182,9 @@ def test_get_fallback_payload_basic():
         "key": "test-key",
         "value": {"alert": "data"},
     }
-    
+
     result = email_provider.get_fallback_payload(error, context)
-    
+
     assert "subject" in result
     assert "body" in result
     assert result["subject"] == "🚨 Kafka Alert Error on Topic alerts"
@@ -195,12 +200,12 @@ def test_get_fallback_payload_missing_context_fields():
     Test get_fallback_payload handles missing context fields gracefully.
     """
     email_provider = EmailProvider()
-    
+
     error = Exception("Unknown error")
     context = {}  # Empty context
-    
+
     result = email_provider.get_fallback_payload(error, context)
-    
+
     assert result["subject"] == "🚨 Kafka Alert Error on Topic N/A"
     assert "N/A" in result["body"]
     assert "Unknown error" in result["body"]
@@ -211,7 +216,7 @@ def test_get_fallback_payload_unicode_handling():
     Test get_fallback_payload handles unicode characters in context.
     """
     email_provider = EmailProvider()
-    
+
     error = Exception("Error with émojis 🎉")
     context = {
         "topic": "unicode-topic",
@@ -219,9 +224,9 @@ def test_get_fallback_payload_unicode_handling():
         "offset": 999,
         "data": {"message": "Hello 世界 🌍"},
     }
-    
+
     result = email_provider.get_fallback_payload(error, context)
-    
+
     assert result["subject"] == "🚨 Kafka Alert Error on Topic unicode-topic"
     assert "Error with émojis 🎉" in result["body"]
     assert "世界" in result["body"]
@@ -233,16 +238,16 @@ def test_get_fallback_payload_html_structure():
     Test get_fallback_payload generates valid HTML structure.
     """
     email_provider = EmailProvider()
-    
+
     error = Exception("Test error")
     context = {
         "topic": "test-topic",
         "partition": 5,
         "offset": 100,
     }
-    
+
     result = email_provider.get_fallback_payload(error, context)
-    
+
     body = result["body"]
     assert "<h1>" in body
     assert "</h1>" in body

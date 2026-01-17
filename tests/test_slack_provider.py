@@ -1,6 +1,5 @@
 import pytest
 import json
-from unittest.mock import AsyncMock, patch
 from core.providers.slack import SlackProvider
 
 
@@ -48,18 +47,17 @@ class TestSlackProvider:
     def test_format_payload_with_complex_json(self, provider):
         """Test format_payload with complex JSON structure."""
         # Test with complex Block Kit structure
-        rendered_content = json.dumps({
-            "text": "Fallback text",
-            "blocks": [
-                {
-                    "type": "section",
-                    "text": {
-                        "type": "mrkdwn",
-                        "text": "Hello *World*"
+        rendered_content = json.dumps(
+            {
+                "text": "Fallback text",
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {"type": "mrkdwn", "text": "Hello *World*"},
                     }
-                }
-            ]
-        })
+                ],
+            }
+        )
         metadata = {"foo": "bar"}
         result = provider.format_payload(rendered_content, metadata)
         assert isinstance(result, dict)
@@ -76,7 +74,7 @@ class TestSlackProvider:
             "offset": 123,
             "timestamp": 1234567890,
             "key": "test-key",
-            "value": {"data": "test"}
+            "value": {"data": "test"},
         }
 
         result = provider.get_fallback_payload(error, context)
@@ -103,7 +101,7 @@ class TestSlackProvider:
         assert "error occurred" in blocks[0]["text"]["text"].lower()
 
         # Verify second block (fields with Kafka context)
-        assert blocks[1]["type"] == "fields"
+        assert blocks[1]["type"] == "section"
         fields = blocks[1]["fields"]
         assert len(fields) == 3  # topic, partition, offset
         assert any("Topic:" in field["text"] for field in fields)
@@ -146,12 +144,7 @@ class TestSlackProvider:
             "topic": "production-alerts",
             "partition": 5,
             "offset": 999999,
-            "nested": {
-                "data": {
-                    "level": "critical",
-                    "message": "System failure"
-                }
-            }
+            "nested": {"data": {"level": "critical", "message": "System failure"}},
         }
 
         result = provider.get_fallback_payload(error, context)
@@ -181,4 +174,3 @@ class TestSlackProvider:
         assert "This is a test" in error_text
         assert "error with multiple" in error_text
         assert "lines" in error_text
-
