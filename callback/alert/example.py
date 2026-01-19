@@ -33,7 +33,7 @@ async def callback(msg: ConsumerRecord, context: Optional[Any] = None):
                 "topic": msg.topic,
                 "partition": msg.partition,
                 "offset": msg.offset,
-            }
+            },
         }
         await dispatcher.process(enriched_message)
     else:

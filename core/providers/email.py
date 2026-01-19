@@ -82,15 +82,19 @@ class EmailProvider(BaseProvider):
             to_emails = destination
         else:
             to_emails = [destination]
-        message["To"] = ", ".join(to_emails)
+        message["To"] = ",".join(to_emails)
 
         # Cc
         cc_emails = meta.get("cc", [])
+        if isinstance(cc_emails, str):
+            cc_emails = [cc_emails]
         if cc_emails:
-            message["Cc"] = ", ".join(cc_emails)
+            message["Cc"] = ",".join(cc_emails)
 
         # Bcc
         bcc_emails = meta.get("bcc", [])
+        if isinstance(bcc_emails, str):
+            bcc_emails = [bcc_emails]
 
         all_recipients = to_emails + cc_emails + bcc_emails
 
