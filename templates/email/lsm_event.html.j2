@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Security Event Notification</title>
+    <style>
+        /* 기본 스타일 (이전과 동일) */
+        body {
+            background-color: #f4f4f7;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            font-size: 14px;
+            line-height: 1.4;
+            margin: 0;
+            padding: 0;
+            -ms-text-size-adjust: 100%;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        .container {
+            margin: 0 auto;
+            max-width: 600px;
+            padding: 20px;
+        }
+
+        .content {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        .header {
+            padding: 30px;
+            text-align: center;
+            border-bottom: 1px solid #edf2f7;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 14px;
+            color: #ffffff;
+            margin-bottom: 10px;
+        }
+
+        {% if payload.action == 'BLOCK' %}
+        .badge-status { background-color: #e53e3e; }
+        .header-title { color: #e53e3e; }
+        {% else %}
+        .badge-status { background-color: #38a169; }
+        .header-title { color: #2d3748; }
+        {% endif %}
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .body {
+            padding: 30px;
+        }
+
+        .label {
+            color: #718096;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .value {
+            color: #2d3748;
+            font-size: 16px;
+            font-weight: 500;
+            word-break: break-all; /* 긴 텍스트 줄바꿈 처리 */
+        }
+
+        /* 상세 테이블 */
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        .details-table th, .details-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #edf2f7;
+        }
+
+        .details-table th {
+            color: #718096;
+            font-weight: 600;
+            width: 30%;
+            background-color: #f7fafc;
+        }
+
+        .details-table td {
+            color: #4a5568;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #a0aec0;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="content">
+            <div class="header">
+                <span class="badge badge-status">{{ payload.action }}</span>
+                <h1 class="header-title">보안 이벤트 알림</h1>
+                <p style="color: #718096; margin-top: 10px;">정책 위반 프로세스 감지됨</p>
+            </div>
+
+            <div class="body">
+                <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 20px;">
+                    <tr>
+                        <td width="50%" style="vertical-align: top; padding-bottom: 20px; padding-right: 10px;">
+                            <span class="label">Time (발생 시간)</span>
+                            <div class="value">{{ time }}</div>
+                        </td>
+                        <td width="50%" style="vertical-align: top; padding-bottom: 20px;">
+                            <span class="label">Command (명령어)</span>
+                            <div class="value" style="font-family: monospace; background: #edf2f7; padding: 2px 6px; border-radius: 4px; display: inline-block;">
+                                {{ payload.proc.comm }}
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="vertical-align: top; padding-bottom: 10px;">
+                            <span class="label">Node (서버 노드)</span>
+                            <div class="value" style="background-color: #fffaf0; border: 1px solid #feeebc; padding: 8px 12px; border-radius: 4px; color: #744210; font-family: monospace; font-size: 14px;">
+                                {{ node }}
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+
+                <hr style="border: 0; border-top: 1px solid #edf2f7; margin: 20px 0;">
+
+                <span class="label" style="margin-bottom: 15px; font-size: 14px; color: #2d3748; font-weight: bold;">
+                    상세 프로세스 정보 (Process Details)
+                </span>
+
+                <table class="details-table">
+                    <tr>
+                        <th>Event Type</th>
+                        <td>{{ payload.proc.event }}</td>
+                    </tr>
+                    <tr>
+                        <th>Node ID</th>
+                        <td>{{ node }}</td> </tr>
+                    <tr>
+                        <th>Command</th>
+                        <td>{{ payload.proc.comm }}</td>
+                    </tr>
+                    <tr>
+                        <th>UID / GID</th>
+                        <td>{{ payload.proc.uid }} / {{ payload.proc.gid }}</td>
+                    </tr>
+                    <tr>
+                        <th>PID / PPID</th>
+                        <td>{{ payload.proc.pid }} / {{ payload.proc.ppid }}</td>
+                    </tr>
+                    <tr>
+                        <th>Return Code</th>
+                        <td>{{ payload.proc.ret }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>System Monitor</p>
+            <p>Node: {{ node }}</p>
+        </div>
+    </div>
+</body>
+</html>
