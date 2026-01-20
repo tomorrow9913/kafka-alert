@@ -39,18 +39,28 @@ class NotificationDispatcher:
             return
 
         template_name = message.get("template")
-        if not template_name:
+        template_content = message.get("template_content")
+
+        if not template_name and not template_content:
             logger.error(f"Invalid or missing template for provider '{provider_name}'.")
             return
 
         context = self._get_message_context(message)
 
         try:
-            # 1. Apply template rules
-            template_name = provider.apply_template_rules(template_name)
+            # 1. Apply template rules (only if template_name is present)
+            if template_name:
+                template_name = provider.apply_template_rules(template_name)
 
             # 2. Render template
-            rendered_content = self.renderer.render(template_name, context)
+            if template_content:
+                rendered_content = self.renderer.render_from_string(template_content, context, is_json=True)
+            elif template_name:
+                rendered_content = self.renderer.render(template_name, context)
+            else:
+                # This case should ideally be caught by the earlier check, but as a safeguard
+                logger.error(f"Neither template_name nor template_content found for provider '{provider_name}'.")
+                return
 
             # 3. Format payload
             metadata = context.get("_meta", {})
