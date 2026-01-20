@@ -19,12 +19,8 @@ class EmailProvider(BaseProvider):
         return f"{template_name}.html.j2"
 
     def format_payload(
-        self, rendered_content: Union[Dict[str, Any], str], metadata: Dict[str, Any]
+        self, rendered_content: str, metadata: Dict[str, Any]
     ) -> Union[Dict[str, Any], str]:
-        if not isinstance(rendered_content, str):
-            logger.error("EmailProvider requires a string to be rendered.")
-            return {"subject": "Error", "body": ""}
-
         subject = (
             metadata.get("subject")
             or settings.EMAIL_CONFIG.DEFAULT_SUBJECT

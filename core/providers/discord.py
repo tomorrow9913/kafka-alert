@@ -1,6 +1,7 @@
 import aiohttp
 import json
 from typing import Dict, Any, Union, List, Optional
+
 from .base import BaseProvider
 from utils.logger import LogManager
 from core.config import settings
@@ -17,10 +18,8 @@ class DiscordProvider(BaseProvider):
         return f"{template_name}.json.j2"
 
     def format_payload(
-        self, rendered_content: Union[Dict[str, Any], str], metadata: Dict[str, Any]
+        self, rendered_content: str, metadata: Dict[str, Any]
     ) -> Union[Dict[str, Any], str]:
-        if isinstance(rendered_content, dict):
-            return rendered_content
         try:
             return json.loads(rendered_content)
         except json.JSONDecodeError as e:

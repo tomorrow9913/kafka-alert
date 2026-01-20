@@ -47,19 +47,13 @@ class TemplateRenderer:
             logger.error(f"Unexpected error during rendering: {e}")
             raise
 
-    def render_from_string(
-        self, template_content: str, data: Dict[str, Any], is_json: bool = True
-    ) -> Union[Dict[str, Any], str]:
+    def render_from_string(self, template_content: str, data: Dict[str, Any]) -> str:
         """
         Render a template from a raw string.
         """
         try:
             template = self.env.from_string(template_content)
             rendered_str = template.render(**data)
-
-            if is_json:
-                return self._parse_json(rendered_str, "raw_string_template")
-
             return rendered_str
         except Exception as e:
             logger.error(f"Error rendering template from string: {e}")

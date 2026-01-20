@@ -1,19 +1,14 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
-from .renderer import TemplateRenderer
 from .providers.base import BaseProvider
 from utils.logger import LogManager
-from core.config import settings
 
 logger = LogManager.get_logger(__name__)
 
 
 class NotificationDispatcher:
-    def __init__(
-        self, providers: Dict[str, BaseProvider], renderer: TemplateRenderer
-    ) -> None:
+    def __init__(self, providers: Dict[str, BaseProvider]) -> None:
         self.providers = providers
-        self.renderer = renderer
 
     async def process(self, message: Dict[str, Any]) -> None:
         """
@@ -21,7 +16,7 @@ class NotificationDispatcher:
 
         1.  Selects the appropriate provider.
         2.  Determines the destination.
-        3.  Renders the template.
+        3.  Delegates rendering to the provider.
         4.  Formats the payload.
         5.  Sends the notification.
         6.  Handles errors and sends fallback messages.
@@ -52,15 +47,12 @@ class NotificationDispatcher:
             if template_name:
                 template_name = provider.apply_template_rules(template_name)
 
-            # 2. Render template
-            if template_content:
-                rendered_content = self.renderer.render_from_string(template_content, context, is_json=True)
-            elif template_name:
-                rendered_content = self.renderer.render(template_name, context)
-            else:
-                # This case should ideally be caught by the earlier check, but as a safeguard
-                logger.error(f"Neither template_name nor template_content found for provider '{provider_name}'.")
-                return
+            # 2. Delegate rendering to the provider
+            rendered_content = provider.render(
+                template_path=template_name,
+                template_content=template_content,
+                context=context,
+            )
 
             # 3. Format payload
             metadata = context.get("_meta", {})
@@ -92,7 +84,7 @@ class NotificationDispatcher:
         """Extracts the rendering context and metadata from the message data."""
         # Extract Kafka metadata if present
         kafka_meta = message.get("_kafka_meta", {})
-        
+
         data = message.get("data", {})
         if isinstance(data, dict):
             meta = data.pop("_mail_meta", {})
@@ -100,10 +92,12 @@ class NotificationDispatcher:
             context["_meta"] = meta
             # Add Kafka metadata to context for fallback payloads
             if kafka_meta:
-                context.update({
-                    "topic": kafka_meta.get("topic"),
-                    "partition": kafka_meta.get("partition"),
-                    "offset": kafka_meta.get("offset"),
-                })
+                context.update(
+                    {
+                        "topic": kafka_meta.get("topic"),
+                        "partition": kafka_meta.get("partition"),
+                        "offset": kafka_meta.get("offset"),
+                    }
+                )
             return context
         return {"data": data, **kafka_meta}
