@@ -1,8 +1,13 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Union, List, Optional
+import json
+from core.renderer import TemplateRenderer
 
 
 class BaseProvider(ABC):
+    def __init__(self, template_dir: str = "templates"):
+        self.renderer = TemplateRenderer(template_dir)
+
     @property
     def default_destination(self) -> Optional[str]:
         """
@@ -12,6 +17,27 @@ class BaseProvider(ABC):
             Optional[str]: The default destination.
         """
         return None
+
+    def render(
+        self,
+        template_path: Optional[str],
+        template_content: Optional[str],
+        context: Dict[str, Any],
+    ) -> str:
+        """
+        Renders a template from a file or a string and ensures the output is a string.
+        If rendering a .json.j2 template results in a dict, it's dumped to a JSON string.
+        """
+        if template_content:
+            return self.renderer.render_from_string(template_content, context)
+
+        if template_path:
+            rendered_output = self.renderer.render(template_path, context)
+            if isinstance(rendered_output, dict):
+                return json.dumps(rendered_output)
+            return str(rendered_output)
+
+        raise ValueError("Either template_path or template_content must be provided.")
 
     @abstractmethod
     def apply_template_rules(self, template_name: str) -> str:
@@ -24,11 +50,10 @@ class BaseProvider(ABC):
         Returns:
             str: The modified template name.
         """
-        pass
 
     @abstractmethod
     def format_payload(
-        self, rendered_content: Union[Dict[str, Any], str], metadata: Dict[str, Any]
+        self, rendered_content: str, metadata: Dict[str, Any]
     ) -> Union[Dict[str, Any], str]:
         """
         Format the rendered content into the final payload.
@@ -40,7 +65,6 @@ class BaseProvider(ABC):
         Returns:
             Union[Dict[str, Any], str]: The formatted payload.
         """
-        pass
 
     @abstractmethod
     def get_fallback_payload(
@@ -56,7 +80,6 @@ class BaseProvider(ABC):
         Returns:
             Union[Dict[str, Any], str]: The fallback payload.
         """
-        pass
 
     @abstractmethod
     async def send(
@@ -72,4 +95,3 @@ class BaseProvider(ABC):
         Returns:
             bool: True if successful, False otherwise.
         """
-        pass
