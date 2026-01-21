@@ -1,0 +1,62 @@
+{
+  "username": "🛡️ Security Guardian",
+  "avatar_url": "https://cdn-icons-png.flaticon.com/512/3491/3491941.png",
+  "embeds": [
+    {
+      "title": "🚨 Security Event: {{ payload.proc.event }}",
+      "description": "시스템 보안 정책 위반 행위가 감지되었습니다.\n**Action:** `{{ payload.action }}`",
+      "color": {{ 15548997 if payload.action == 'BLOCK' else 5763719 }},
+      "fields": [
+        {
+          "name": "🖥️ Node",
+          "value": "`{{ node or 'Unknown Node' }}`",
+          "inline": false
+        }
+
+        {# 1. Target Path: 접근 대상 파일이 있을 경우에만 표시 #}
+        {% if payload.path %}
+        ,{
+          "name": "📂 Target File (Object)",
+          "value": "```\n{{ (payload.path or 'N/A').split('\u0000')[0] }}\n```",
+          "inline": false
+        }
+        {% endif %}
+
+        {# 2. Executable Path: 실행 바이너리 경로가 있을 경우에만 표시 #}
+        {% if payload.exe %}
+        ,{
+          "name": "🚀 Executable Binary (Subject)",
+          "value": "```\n{{ (payload.exe or 'N/A').split('\u0000')[0] }}\n```",
+          "inline": false
+        }
+        {% endif %}
+
+        ,{
+          "name": "🆔 Identity",
+          "value": "**PID:** `{{ payload.proc.pid }}`\n**PPID:** `{{ payload.proc.ppid }}`",
+          "inline": true
+        },
+        {
+          "name": "👤 User",
+          "value": "**UID:** `{{ payload.proc.uid }}`\n**GID:** `{{ payload.proc.gid }}`",
+          "inline": true
+        },
+        {
+          "name": "⚙️ Command",
+          "value": "`{{ payload.proc.comm }}`",
+          "inline": true
+        },
+        {
+          "name": "🔢 Result (Ret)",
+          "value": "`{{ payload.proc.ret }}`",
+          "inline": true
+        }
+      ],
+      "footer": {
+        "text": "Kafka Alert System • TS: {{ ts }}",
+        "icon_url": "https://cdn-icons-png.flaticon.com/512/942/942748.png"
+      },
+      "timestamp": "{{ time | replace(' ', 'T') }}Z"
+    }
+  ]
+}
