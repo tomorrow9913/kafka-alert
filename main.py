@@ -1,13 +1,13 @@
 import asyncio
 
-from core.config import settings
-from utils.logger import LogManager
-from utils.kafka_manager import init_kafka_manager
-from callback import callbacks
-from core.dispatcher import NotificationDispatcher
-from core.providers.discord import DiscordProvider
-from core.providers.slack import SlackProvider
-from core.providers.email import EmailProvider
+from src.core.config import settings
+from src.utils.logger import LogManager
+from src.utils.kafka_manager import init_kafka_manager
+from src.callback import callbacks
+from src.dispatcher import NotificationDispatcher
+from src.sender_providers.discord import DiscordProvider
+from src.sender_providers.slack import SlackProvider
+from src.sender_providers.email import EmailProvider
 
 logger = LogManager.get_logger(__name__)
 

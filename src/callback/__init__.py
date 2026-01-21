@@ -4,7 +4,7 @@ import importlib
 from pathlib import Path
 from typing import NamedTuple, Callable, Dict, List
 
-from utils.logger import LogManager
+from src.utils.logger import LogManager
 
 logger = LogManager.get_logger(__name__)
 

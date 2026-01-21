@@ -1,8 +1,8 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
-from core.dispatcher import NotificationDispatcher
-from core.renderer import TemplateRenderer
-from core.providers.email import EmailProvider
+from src.dispatcher import NotificationDispatcher
+from src.renderer import TemplateRenderer
+from src.sender_providers.email import EmailProvider
 
 
 @pytest.mark.asyncio
@@ -111,7 +111,7 @@ def test_format_payload_uses_default_subject_from_config():
 
     result = email_provider.format_payload(rendered_content, metadata)
 
-    from core.config import settings
+    from src.core.config import settings
 
     assert result["subject"] == settings.EMAIL_CONFIG.DEFAULT_SUBJECT
     assert result["body"] == rendered_content
@@ -122,7 +122,7 @@ def test_format_payload_uses_hardcoded_fallback_when_config_is_empty(mocker):
     """
     Test format_payload uses hardcoded subject when config default is empty.
     """
-    mocker.patch("core.providers.email.settings.EMAIL_CONFIG.DEFAULT_SUBJECT", "")
+    mocker.patch("src.sender_providers.email.settings.EMAIL_CONFIG.DEFAULT_SUBJECT", "")
     email_provider = EmailProvider()
 
     rendered_content = "Single Line Subject"
@@ -146,7 +146,7 @@ def test_format_payload_body_is_not_split():
 
     result = email_provider.format_payload(rendered_content, metadata)
 
-    from core.config import settings
+    from src.core.config import settings
 
     assert result["subject"] == settings.EMAIL_CONFIG.DEFAULT_SUBJECT
     assert result["body"] == rendered_content

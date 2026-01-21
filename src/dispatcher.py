@@ -1,7 +1,7 @@
 from typing import Dict, Any
 
-from .providers.base import BaseProvider
-from utils.logger import LogManager
+from src.sender_providers.base import BaseProvider
+from src.utils.logger import LogManager
 
 logger = LogManager.get_logger(__name__)
 

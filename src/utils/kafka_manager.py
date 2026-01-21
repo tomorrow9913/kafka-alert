@@ -5,8 +5,8 @@ from typing import Awaitable, Callable, Optional, Any
 
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer, ConsumerRecord
 
-from utils.logger import LogManager
-from core.config import (
+from src.utils.logger import LogManager
+from src.core.config import (
     settings,
     KafkaConsumerConfig,
     KafkaProducerConfig,

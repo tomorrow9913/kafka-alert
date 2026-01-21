@@ -1,7 +1,7 @@
 import json
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound, TemplateError
 from typing import Dict, Any, Union
-from utils.logger import LogManager
+from src.utils.logger import LogManager
 
 logger = LogManager.get_logger(__name__)
 

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Union, List, Optional
 import json
-from core.renderer import TemplateRenderer
+from src.renderer import TemplateRenderer
 
 
 class BaseProvider(ABC):

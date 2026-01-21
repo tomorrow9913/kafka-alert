@@ -124,7 +124,7 @@ Alert
 ```python
 from aiokafka import ConsumerRecord
 from core.factory import factory
-from utils.logger import LogManager
+from src.utils.logger import LogManager
 
 logger = LogManager.get_logger(__name__)
 

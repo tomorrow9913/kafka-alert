@@ -9,7 +9,7 @@ from typing import Optional, Set
 import apprise
 from loguru import logger
 
-from core.config import settings
+from src.core.config import settings
 
 
 class InterceptHandler(logging.Handler):

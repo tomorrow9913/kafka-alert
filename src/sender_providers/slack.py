@@ -1,9 +1,9 @@
 import aiohttp
 import json
 from typing import Dict, Any, Union, List, Optional
-from .base import BaseProvider
-from utils.logger import LogManager
-from core.config import settings
+from src.sender_providers.base import BaseProvider
+from src.utils.logger import LogManager
+from src.core.config import settings
 
 logger = LogManager.get_logger(__name__)
 

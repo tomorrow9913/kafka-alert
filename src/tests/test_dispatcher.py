@@ -1,8 +1,8 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
-from core.dispatcher import NotificationDispatcher
-from core.renderer import TemplateRenderer
-from core.providers.base import BaseProvider
+from src.dispatcher import NotificationDispatcher
+from src.renderer import TemplateRenderer
+from src.sender_providers.base import BaseProvider
 
 
 @pytest.mark.asyncio
@@ -31,7 +31,9 @@ async def test_process_success():
 
     # Verify
     mock_provider.apply_template_rules.assert_called_once_with("template")
-    mock_renderer.render.assert_called_once_with("template.txt", {"foo": "bar", "_meta": {}})
+    mock_renderer.render.assert_called_once_with(
+        "template.txt", {"foo": "bar", "_meta": {}}
+    )
     mock_provider.format_payload.assert_called_once_with("rendered content", {})
     mock_provider.send.assert_called_once_with("dest", {"key": "value"})
 
@@ -85,7 +87,10 @@ async def test_process_with_mail_meta():
         "destination": "dest",
         "data": {
             "foo": "bar",
-            "_mail_meta": {"subject": "Test Subject", "recipients": ["test@example.com"]},
+            "_mail_meta": {
+                "subject": "Test Subject",
+                "recipients": ["test@example.com"],
+            },
         },
     }
 

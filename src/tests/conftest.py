@@ -1,5 +1,5 @@
 import pytest
-from core.renderer import TemplateRenderer
+from src.renderer import TemplateRenderer
 
 
 @pytest.fixture

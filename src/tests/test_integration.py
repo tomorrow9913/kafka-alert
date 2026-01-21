@@ -1,20 +1,20 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 from aiokafka import ConsumerRecord
-from utils.kafka_manager import KafkaManager
-from core.config import KafkaConsumerConfig, KafkaProducerConfig
-from core.dispatcher import NotificationDispatcher
+from src.utils.kafka_manager import KafkaManager
+from src.core.config import KafkaConsumerConfig, KafkaProducerConfig
+from src.dispatcher import NotificationDispatcher
 
 
 @pytest.mark.asyncio
 async def test_kafka_manager_consumption_with_dispatcher(mocker):
     # Mock AIOKafkaConsumer
-    mock_consumer_cls = mocker.patch("utils.kafka_manager.AIOKafkaConsumer")
+    mock_consumer_cls = mocker.patch("src.utils.kafka_manager.AIOKafkaConsumer")
     mock_consumer_instance = AsyncMock()
     mock_consumer_cls.return_value = mock_consumer_instance
 
     # Mock Producer
-    mocker.patch("utils.kafka_manager.AIOKafkaProducer", return_value=AsyncMock())
+    mocker.patch("src.utils.kafka_manager.AIOKafkaProducer", return_value=AsyncMock())
 
     # Mock NotificationDispatcher
     mock_dispatcher = AsyncMock(spec=NotificationDispatcher)
@@ -74,10 +74,10 @@ async def test_kafka_manager_consumption_with_dispatcher(mocker):
 @pytest.mark.asyncio
 async def test_kafka_manager_topic_filtering(mocker):
     # Test that callbacks for non-existent topics are removed
-    mock_consumer_cls = mocker.patch("utils.kafka_manager.AIOKafkaConsumer")
+    mock_consumer_cls = mocker.patch("src.utils.kafka_manager.AIOKafkaConsumer")
     mock_consumer_instance = AsyncMock()
     mock_consumer_cls.return_value = mock_consumer_instance
-    mocker.patch("utils.kafka_manager.AIOKafkaProducer", return_value=AsyncMock())
+    mocker.patch("src.utils.kafka_manager.AIOKafkaProducer", return_value=AsyncMock())
 
     # Mock available topics
     mock_consumer_instance.topics = AsyncMock(return_value={"existing-topic"})

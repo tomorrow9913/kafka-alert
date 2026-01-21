@@ -1,6 +1,6 @@
 import pytest
 import json
-from core.providers.slack import SlackProvider
+from src.sender_providers.slack import SlackProvider
 
 
 class TestSlackProvider:

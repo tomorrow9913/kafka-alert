@@ -1,6 +1,6 @@
 import pytest
 import json
-from core.providers.discord import DiscordProvider
+from src.sender_providers.discord import DiscordProvider
 
 
 @pytest.fixture
@@ -73,7 +73,9 @@ class TestFormatPayload:
         rendered_content = json.dumps(
             {
                 "content": "Alert",
-                "embeds": [{"title": "Test", "fields": [{"name": "Key", "value": "Val"}]}],
+                "embeds": [
+                    {"title": "Test", "fields": [{"name": "Key", "value": "Val"}]}
+                ],
             }
         )
         metadata = {}

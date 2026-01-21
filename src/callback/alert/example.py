@@ -1,7 +1,7 @@
 from typing import Any, Optional
 from aiokafka import ConsumerRecord
-from core.dispatcher import NotificationDispatcher
-from utils.logger import LogManager
+from src.dispatcher import NotificationDispatcher
+from src.utils.logger import LogManager
 
 logger = LogManager.get_logger(__name__)
 
