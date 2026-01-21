@@ -31,7 +31,7 @@ for dir_path in [
     for file_path in [
         f for f in dir_path.iterdir() if f.suffix == ".py" and f.name != "__init__.py"
     ]:
-        module_name = f"callback.{dir_path.name}.{file_path.stem}"
+        module_name = f"src.callback.{dir_path.name}.{file_path.stem}"
         module = importlib.import_module(module_name)
 
         alert_disable = getattr(module, "ALERT_DISABLE", False)

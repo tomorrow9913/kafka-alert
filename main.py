@@ -22,9 +22,9 @@ async def main():
 
     # 1. Initialize dependencies
     providers = {
-        "discord": DiscordProvider(),
-        "slack": SlackProvider(),
-        "email": EmailProvider(),
+        "discord": DiscordProvider(template_dir="src/templates"),
+        "slack": SlackProvider(template_dir="src/templates"),
+        "email": EmailProvider(template_dir="src/templates"),
     }
     dispatcher = NotificationDispatcher(providers)
 
