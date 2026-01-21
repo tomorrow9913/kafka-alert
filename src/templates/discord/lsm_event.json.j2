@@ -3,57 +3,84 @@
   "avatar_url": "https://cdn-icons-png.flaticon.com/512/3491/3491941.png",
   "embeds": [
     {
-      "title": "🚨 Security Event: {{ payload.proc.event }}",
-      "description": "시스템 보안 정책 위반 행위가 감지되었습니다.\n**Action:** `{{ payload.action }}`",
+      "title": "🚨 Security Event: {{ payload.proc.event | upper }}",
+      "description": "보안 이벤트가 감지되었습니다.\n\n**Action:** `{{ payload.action }}`",
       "color": {{ 15548997 if payload.action == 'BLOCK' else 5763719 }},
       "fields": [
+        {# --- Row 1: Kubernetes Context (메타데이터가 있을 경우) --- #}
+        {% if metadata %}
+        {
+          "name": "📦 Kubernetes Context",
+          "value": "**NS:** `{{ metadata.namespace }}`\n**Pod:** `{{ metadata.pod }}`",
+          "inline": true
+        },
+        {
+          "name": "🏷️ Node & Container",
+          "value": "**Node:** `{{ metadata.node }}`\n**Cont:** `{{ metadata.container }}`",
+          "inline": true
+        },
+        {# 3열 빈칸 채우기 or 추가 정보 (App Label) #}
+        {
+          "name": "📱 App Label",
+          "value": "`{{ metadata.app_label or 'N/A' }}`",
+          "inline": true
+        },
+        {% else %}
+        {# 메타데이터가 없는 레거시/Host 환경일 경우 #}
         {
           "name": "🖥️ Node",
-          "value": "`{{ node or 'Unknown Node' }}`",
+          "value": "`{{ node or 'Unknown' }}`",
           "inline": false
-        }
-
-        {# 1. Target Path: 접근 대상 파일이 있을 경우에만 표시 #}
-        {% if payload.path %}
-        ,{
-          "name": "📂 Target File (Object)",
-          "value": "```\n{{ (payload.path or 'N/A').split('\u0000')[0] }}\n```",
-          "inline": false
-        }
+        },
         {% endif %}
 
-        {# 2. Executable Path: 실행 바이너리 경로가 있을 경우에만 표시 #}
-        {% if payload.exe %}
-        ,{
-          "name": "🚀 Executable Binary (Subject)",
-          "value": "```\n{{ (payload.exe or 'N/A').split('\u0000')[0] }}\n```",
-          "inline": false
-        }
-        {% endif %}
-
-        ,{
-          "name": "🆔 Identity",
+        {# --- Row 2: Process Identity (요청하신 변경 사항) --- #}
+        {
+          "name": "⚙️ Command",
+          "value": "Run: `{{ payload.proc.comm }}`",
+          "inline": true
+        },
+        {
+          "name": "🆔 Process IDs",
           "value": "**PID:** `{{ payload.proc.pid }}`\n**PPID:** `{{ payload.proc.ppid }}`",
           "inline": true
         },
         {
-          "name": "👤 User",
-          "value": "**UID:** `{{ payload.proc.uid }}`\n**GID:** `{{ payload.proc.gid }}`",
-          "inline": true
-        },
-        {
-          "name": "⚙️ Command",
-          "value": "`{{ payload.proc.comm }}`",
-          "inline": true
-        },
-        {
-          "name": "🔢 Result (Ret)",
-          "value": "`{{ payload.proc.ret }}`",
+          "name": "👤 User Context",
+          "value": "**UID:** `{{ payload.proc.uid if payload.proc.uid is defined else 'N/A' }}`\n**GID:** `{{ payload.proc.gid if payload.proc.gid is defined else 'N/A' }}`",
           "inline": true
         }
+
+        {# --- Row 3: Detailed Evidence --- #}
+        {# Target Path #}
+        {% if payload.path %}
+        ,{
+          "name": "📂 Target File",
+          "value": "```bash\n{{ payload.path.split('\u0000')[0] }}\n```",
+          "inline": false
+        }
+        {% endif %}
+
+        {# Executable Path #}
+        {% if payload.exe %}
+        ,{
+          "name": "🚀 Executable Binary",
+          "value": "```bash\n{{ payload.exe.split('\u0000')[0] }}\n```",
+          "inline": false
+        }
+        {% endif %}
+
+        {# Command Line #}
+        {% if payload.cmdline %}
+        ,{
+          "name": "⌨️ Full Command Line",
+          "value": "```bash\n{{ payload.cmdline }}\n```",
+          "inline": false
+        }
+        {% endif %}
       ],
       "footer": {
-        "text": "Kafka Alert System • TS: {{ ts }}",
+        "text": "🛡️ Policy Watcher • {{ metadata.pod_uid if metadata else 'Host Process' }}",
         "icon_url": "https://cdn-icons-png.flaticon.com/512/942/942748.png"
       },
       "timestamp": "{{ time | replace(' ', 'T') }}Z"

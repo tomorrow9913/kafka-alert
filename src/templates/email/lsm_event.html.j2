@@ -1,122 +1,220 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
+
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>보안 이벤트 알림</title>
+    <title>Security Event Alert</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f4f4f7; font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Dotum', sans-serif; -webkit-font-smoothing: antialiased; font-size: 14px; line-height: 1.5; color: #2d3748;">
+
+<body
+    style="margin: 0; padding: 0; background-color: #f4f4f7; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; font-size: 14px; line-height: 1.5; color: #2d3748;">
 
     <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f4f7; padding: 40px 0;">
         <tr>
             <td align="center">
 
-                <table border="0" cellpadding="0" cellspacing="0" width="600" class="container" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; width: 600px; max-width: 600px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                <table border="0" cellpadding="0" cellspacing="0" width="600" class="container"
+                    style="background-color: #ffffff; border-radius: 12px; overflow: hidden; width: 600px; max-width: 600px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
 
                     <tr>
-                        <td align="center" style="padding: 30px 20px; border-bottom: 1px solid #edf2f7; {% if payload.action == 'BLOCK' %}background-color: #fff5f5;{% else %}background-color: #f0fff4;{% endif %}">
+                        <td align="center"
+                            style="padding: 35px 30px; border-bottom: 1px solid #edf2f7; {% if payload.action == 'BLOCK' %}background-color: #fff5f5;{% else %}background-color: #f0fff4;{% endif %}">
 
-                            <div style="display: inline-block; width: 50px; height: 50px; line-height: 50px; border-radius: 50%; margin-bottom: 15px; font-size: 24px; text-align: center; {% if payload.action == 'BLOCK' %}background-color: #fed7d7; color: #e53e3e;{% else %}background-color: #c6f6d5; color: #38a169;{% endif %}">
+                            <div
+                                style="display: inline-block; width: 60px; height: 60px; line-height: 60px; border-radius: 50%; margin-bottom: 15px; font-size: 28px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); {% if payload.action == 'BLOCK' %}background-color: #fed7d7; color: #c53030;{% else %}background-color: #c6f6d5; color: #2f855a;{% endif %}">
                                 {% if payload.action == 'BLOCK' %}🛡️{% else %}⚠️{% endif %}
                             </div>
 
-                            <h1 style="margin: 0; font-size: 24px; font-weight: bold; letter-spacing: -0.5px; {% if payload.action == 'BLOCK' %}color: #c53030;{% else %}color: #2f855a;{% endif %}">
-                                {% if payload.action == 'BLOCK' %}
-                                보안 위반 차단됨
-                                {% else %}
-                                보안 이벤트 감지됨
-                                {% endif %}
+                            <h1
+                                style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px; {% if payload.action == 'BLOCK' %}color: #c53030;{% else %}color: #276749;{% endif %}">
+                                {{ payload.proc.event | upper }} Detected
                             </h1>
 
-                            <p style="margin: 10px 0 0 0; color: #4a5568; font-size: 14px;">
-                                이벤트: <strong>{{ payload.proc.event }}</strong> | 조치: <strong>{{ payload.action }}</strong>
+                            <p style="margin: 8px 0 0 0; color: #718096; font-size: 14px; font-weight: 500;">
+                                Policy Action: <strong
+                                    style="{% if payload.action == 'BLOCK' %}color: #e53e3e;{% else %}color: #38a169;{% endif %}">{{
+                                    payload.action }}</strong>
                             </p>
                         </td>
                     </tr>
 
                     <tr>
-                        <td style="padding: 30px;">
+                        <td style="padding: 35px;">
 
-                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 25px;">
-                                <tr>
-                                    <td width="50%" valign="top" style="padding-bottom: 10px;">
-                                        <span style="color: #718096; font-size: 12px; font-weight: bold; display: block; margin-bottom: 5px;">📅 발생 시간 (UTC)</span>
-                                        <div style="font-size: 15px; font-weight: 600; color: #1a202c;">{{ time }}</div>
-                                    </td>
-                                    <td width="50%" valign="top" style="padding-bottom: 10px;">
-                                        <span style="color: #718096; font-size: 12px; font-weight: bold; display: block; margin-bottom: 5px;">🖥️ 서버 노드</span>
-                                        <div style="font-size: 15px; font-weight: 600; color: #1a202c;">{{ node or 'Unknown' }}</div>
-                                    </td>
-                                </tr>
-                            </table>
+                            <div style="margin-bottom: 25px;">
+                                <span
+                                    style="text-transform: uppercase; letter-spacing: 0.05em; color: #a0aec0; font-size: 11px; font-weight: 700; display: block; margin-bottom: 10px;">📦
+                                    Kubernetes Context</span>
 
-                            <div style="border-top: 1px dashed #e2e8f0; margin: 0 0 25px 0;"></div>
+                                <table border="0" cellpadding="0" cellspacing="0" width="100%"
+                                    style="background-color: #f8fafc; border: 1px solid #edf2f7; border-radius: 8px;">
+                                    {% if metadata %}
+                                    <tr>
+                                        <td width="50%"
+                                            style="padding: 15px; border-right: 1px solid #edf2f7; border-bottom: 1px solid #edf2f7;">
+                                            <span
+                                                style="color: #718096; font-size: 11px; font-weight: bold; display: block;">Namespace</span>
+                                            <div style="color: #2d3748; font-weight: 600; font-size: 13px;">{{
+                                                metadata.namespace }}</div>
+                                        </td>
+                                        <td width="50%" style="padding: 15px; border-bottom: 1px solid #edf2f7;">
+                                            <span
+                                                style="color: #718096; font-size: 11px; font-weight: bold; display: block;">Pod
+                                                Name</span>
+                                            <div
+                                                style="color: #2d3748; font-weight: 600; font-size: 13px; word-break: break-all;">
+                                                {{ metadata.pod }}</div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 15px; border-right: 1px solid #edf2f7;">
+                                            <span
+                                                style="color: #718096; font-size: 11px; font-weight: bold; display: block;">Node</span>
+                                            <div style="color: #2d3748; font-size: 13px;">{{ metadata.node }}</div>
+                                        </td>
+                                        <td style="padding: 15px;">
+                                            <span
+                                                style="color: #718096; font-size: 11px; font-weight: bold; display: block;">Container</span>
+                                            <div style="color: #2d3748; font-size: 13px;">{{ metadata.container }}</div>
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td style="padding: 15px;">
+                                            <span
+                                                style="color: #718096; font-size: 11px; font-weight: bold; display: block;">Host
+                                                Node</span>
+                                            <div style="color: #2d3748; font-weight: 600;">{{ node or 'Unknown Node' }}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                </table>
+                            </div>
 
-                            {# 실행 파일 (Subject) #}
-                            {% if payload.exe %}
-                            <div style="margin-bottom: 20px;">
-                                <span style="color: #4a5568; font-size: 12px; font-weight: bold; display: block; margin-bottom: 8px;">🚀 실행 바이너리 (Subject)</span>
-                                <div style="background-color: #2d3748; color: #edf2f7; padding: 12px 15px; border-radius: 6px; font-family: Consolas, Monaco, monospace; font-size: 13px; word-break: break-all; border-left: 5px solid #4299e1; line-height: 1.4;">
-                                    {{ (payload.exe or 'N/A').split('\u0000')[0] }}
+                            <div style="margin-bottom: 30px;">
+                                <span
+                                    style="text-transform: uppercase; letter-spacing: 0.05em; color: #a0aec0; font-size: 11px; font-weight: 700; display: block; margin-bottom: 10px;">🆔
+                                    Process Identity</span>
+
+                                <table border="0" cellpadding="0" cellspacing="0" width="100%"
+                                    style="border-collapse: separate; border-spacing: 0;">
+                                    <tr>
+                                        <td
+                                            style="padding: 12px 15px; background-color: #2d3748; border-radius: 6px 6px 0 0; color: #ffffff; font-weight: 600; font-family: monospace;">
+                                            <span
+                                                style="color: #a0aec0; font-weight: normal; margin-right: 8px;">Comm:</span>
+                                            {{ payload.proc.comm }}
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td style="padding: 0;">
+                                            <table border="0" cellpadding="0" cellspacing="0" width="100%"
+                                                style="border: 1px solid #e2e8f0; border-top: 0; border-radius: 0 0 6px 6px;">
+                                                <tr>
+                                                    <td width="50%"
+                                                        style="padding: 12px 15px; border-right: 1px solid #e2e8f0;">
+                                                        <div
+                                                            style="font-size: 11px; color: #718096; font-weight: bold; margin-bottom: 2px;">
+                                                            PID / PPID</div>
+                                                        <div
+                                                            style="font-family: monospace; font-size: 13px; color: #2d3748;">
+                                                            {{ payload.proc.pid }} <span
+                                                                style="color: #cbd5e0;">/</span> {{ payload.proc.ppid }}
+                                                        </div>
+                                                    </td>
+                                                    <td width="50%" style="padding: 12px 15px;">
+                                                        <div
+                                                            style="font-size: 11px; color: #718096; font-weight: bold; margin-bottom: 2px;">
+                                                            UID / GID</div>
+                                                        <div
+                                                            style="font-family: monospace; font-size: 13px; color: #2d3748;">
+                                                            {{ payload.proc.uid if payload.proc.uid is defined else
+                                                            'N/A' }} <span style="color: #cbd5e0;">/</span> {{
+                                                            payload.proc.gid if payload.proc.gid is defined else 'N/A'
+                                                            }}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <div>
+                                <span
+                                    style="text-transform: uppercase; letter-spacing: 0.05em; color: #a0aec0; font-size: 11px; font-weight: 700; display: block; margin-bottom: 10px;">📋
+                                    Evidence Details</span>
+
+                                {% if payload.cmdline %}
+                                <div style="margin-bottom: 15px;">
+                                    <span
+                                        style="color: #4a5568; font-size: 12px; font-weight: bold; display: block; margin-bottom: 6px;">⌨️
+                                        Full Command Line</span>
+                                    <div
+                                        style="background-color: #edf2f7; color: #2d3748; padding: 12px; border-radius: 6px; font-family: Consolas, Monaco, monospace; font-size: 12px; word-break: break-all; border: 1px solid #e2e8f0;">
+                                        {{ payload.cmdline }}
+                                    </div>
                                 </div>
-                            </div>
-                            {% endif %}
+                                {% endif %}
 
-                            {# 대상 파일 (Object) #}
-                            {% if payload.path %}
-                            <div style="margin-bottom: 20px;">
-                                <span style="color: #4a5568; font-size: 12px; font-weight: bold; display: block; margin-bottom: 8px;">📂 대상 파일 (Object)</span>
-                                <div style="background-color: #2d3748; color: #edf2f7; padding: 12px 15px; border-radius: 6px; font-family: Consolas, Monaco, monospace; font-size: 13px; word-break: break-all; border-left: 5px solid #ed8936; line-height: 1.4;">
-                                    {{ (payload.path or 'N/A').split('\u0000')[0] }}
+                                {% if payload.exe %}
+                                <div style="margin-bottom: 15px;">
+                                    <span
+                                        style="color: #4a5568; font-size: 12px; font-weight: bold; display: block; margin-bottom: 6px;">🚀
+                                        Executable Binary</span>
+                                    <div
+                                        style="background-color: #edf2f7; color: #2d3748; padding: 12px; border-radius: 6px; font-family: Consolas, Monaco, monospace; font-size: 12px; word-break: break-all; border: 1px solid #e2e8f0;">
+                                        {{ payload.exe.split('\u0000')[0] }}
+                                    </div>
                                 </div>
-                            </div>
-                            {% endif %}
+                                {% endif %}
 
-                            <div style="margin-top: 30px; margin-bottom: 10px;">
-                                <span style="color: #2d3748; font-size: 14px; font-weight: bold;">📋 상세 프로세스 정보</span>
+                                {% if payload.path %}
+                                <div style="margin-bottom: 15px;">
+                                    <span
+                                        style="color: #4a5568; font-size: 12px; font-weight: bold; display: block; margin-bottom: 6px;">📂
+                                        Target Object</span>
+                                    <div
+                                        style="background-color: #edf2f7; color: #2d3748; padding: 12px; border-radius: 6px; font-family: Consolas, Monaco, monospace; font-size: 12px; word-break: break-all; border-left: 4px solid #ed8936; border: 1px solid #e2e8f0; border-left-width: 4px;">
+                                        {{ payload.path.split('\u0000')[0] }}
+                                    </div>
+                                </div>
+                                {% endif %}
                             </div>
-
-                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border: 1px solid #edf2f7; border-radius: 6px; border-collapse: separate; border-spacing: 0; overflow: hidden;">
-                                <tr>
-                                    <th width="30%" style="background-color: #f7fafc; color: #4a5568; font-weight: 600; text-align: left; padding: 12px 15px; border-bottom: 1px solid #edf2f7; font-size: 13px;">명령어 (Command)</th>
-                                    <td style="padding: 12px 15px; border-bottom: 1px solid #edf2f7; color: #2d3748; font-family: monospace; font-size: 13px;">{{ payload.proc.comm }}</td>
-                                </tr>
-                                <tr>
-                                    <th style="background-color: #f7fafc; color: #4a5568; font-weight: 600; text-align: left; padding: 12px 15px; border-bottom: 1px solid #edf2f7; font-size: 13px;">PID / PPID</th>
-                                    <td style="padding: 12px 15px; border-bottom: 1px solid #edf2f7; color: #2d3748; font-family: monospace; font-size: 13px;">
-                                        {{ payload.proc.pid }} <span style="color:#cbd5e0">/</span> {{ payload.proc.ppid }}
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th style="background-color: #f7fafc; color: #4a5568; font-weight: 600; text-align: left; padding: 12px 15px; border-bottom: 1px solid #edf2f7; font-size: 13px;">사용자 (UID/GID)</th>
-                                    <td style="padding: 12px 15px; border-bottom: 1px solid #edf2f7; color: #2d3748; font-family: monospace; font-size: 13px;">
-                                        {{ payload.proc.uid }} <span style="color:#cbd5e0">/</span> {{ payload.proc.gid }}
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th style="background-color: #f7fafc; color: #4a5568; font-weight: 600; text-align: left; padding: 12px 15px; font-size: 13px;">결과 코드 (Ret)</th>
-                                    <td style="padding: 12px 15px; color: #2d3748; font-family: monospace; font-size: 13px;">{{ payload.proc.ret }}</td>
-                                </tr>
-                            </table>
 
                         </td>
                     </tr>
 
                     <tr>
-                        <td align="center" style="background-color: #f8fafc; padding: 20px; color: #a0aec0; font-size: 12px; border-top: 1px solid #edf2f7;">
-                            <p style="margin: 0; font-weight: bold; color: #718096;">Kafka Alert System</p>
-                            <p style="margin: 5px 0 0 0;">Node ID: {{ node }}</p>
-                            <p style="margin: 5px 0 0 0; opacity: 0.7;">생성 시간: {{ time }} UTC</p>
+                        <td align="center"
+                            style="background-color: #f8fafc; padding: 25px; border-top: 1px solid #e2e8f0;">
+                            <p style="margin: 0; color: #718096; font-size: 12px; font-weight: 600;">🛡️ Security
+                                Guardian</p>
+                            <p style="margin: 5px 0 0 0; color: #a0aec0; font-size: 11px;">
+                                Time: {{ time }} UTC • Node: {{ metadata.node if metadata else node }}
+                            </p>
+                            {% if metadata and metadata.pod_uid %}
+                            <p style="margin: 2px 0 0 0; color: #cbd5e0; font-size: 10px; font-family: monospace;">
+                                Pod UID: {{ metadata.pod_uid }}
+                            </p>
+                            {% endif %}
                         </td>
                     </tr>
 
                 </table>
-                <p style="text-align: center; margin-top: 20px; color: #a0aec0; font-size: 11px;">
-                    본 메일은 보안 시스템에 의해 자동으로 발송되었습니다.
+
+                <p style="text-align: center; margin-top: 25px; color: #a0aec0; font-size: 11px;">
+                    This is an automated security alert. Please do not reply directly to this email.
                 </p>
 
             </td>
         </tr>
     </table>
 </body>
+
 </html>
