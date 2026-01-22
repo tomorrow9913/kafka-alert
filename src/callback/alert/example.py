@@ -2,7 +2,7 @@ from typing import Any, Optional
 from aiokafka import ConsumerRecord
 from src.dispatcher import NotificationDispatcher
 from src.utils.logger import LogManager
-from src.callback.alert.schema import AlertPayload
+from src.schema.alert_schema import AlertPayload
 
 logger = LogManager.get_logger(__name__)
 
