@@ -2,6 +2,7 @@ from typing import Any, Optional
 from aiokafka import ConsumerRecord
 from src.dispatcher import NotificationDispatcher
 from src.utils.logger import LogManager
+from src.callback.alert.schema import AlertPayload
 
 logger = LogManager.get_logger(__name__)
 
@@ -26,6 +27,12 @@ async def callback(msg: ConsumerRecord, context: Optional[Any] = None):
         f"Received message on topic '{msg.topic}'. Processing with NotificationDispatcher..."
     )
     if msg.value:
+        try:
+            AlertPayload.model_validate(msg.value)
+        except Exception as e:
+            logger.error(f"Invalid AlertPayload format: {e}; message={msg.value}")
+            raise ValueError(f"Invalid AlertPayload format: {e}")
+
         # Enrich the message with Kafka metadata
         enriched_message = {
             **msg.value,
@@ -35,6 +42,7 @@ async def callback(msg: ConsumerRecord, context: Optional[Any] = None):
                 "offset": msg.offset,
             },
         }
+
         await dispatcher.process(enriched_message)
     else:
         logger.warning(f"Skipping message with empty value on topic '{msg.topic}'.")
