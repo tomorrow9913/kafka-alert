@@ -55,6 +55,7 @@ class DatabaseProvider(BaseStorageProvider):
         """
         logger.debug(f"Performing lightweight state check for key '{key}' in DB.")
         with self.get_db() as db:
+            db.expire_all()
             state = (
                 db.query(TemplateState)
                 .filter(TemplateState.template_key == key)
@@ -77,6 +78,7 @@ class DatabaseProvider(BaseStorageProvider):
         """
         logger.debug(f"Performing full fetch for version_id '{version_id}' from DB.")
         with self.get_db() as db:
+            db.expire_all()
             history = (
                 db.query(AlertTemplate).filter(AlertTemplate.id == version_id).first()
             )

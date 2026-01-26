@@ -63,6 +63,7 @@ class BaseStorageProvider(ABC):
             cached_state
             and latest_state
             and cached_state["version_id"] == latest_state["version_id"]
+            and cached_state["timestamp"] == latest_state["timestamp"]
         ):
             # State is the same, just update the check time and use cached content
             self._state_cache[key]["last_checked"] = now
