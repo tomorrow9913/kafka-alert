@@ -3,8 +3,8 @@
   "avatar_url": "https://cdn-icons-png.flaticon.com/512/3491/3491941.png",
   "embeds": [
     {
-      "title": "🌐 Network Event: {{ payload.proc.event | upper }}",
-      "description": "네트워크 보안 이벤트가 감지되었습니다.",
+      "title": "🌐 Network Event: {{ payload.proc.event | upper if payload is defined and payload.proc is defined and payload.proc.event is defined else 'UNKNOWN' }}",
+      "description": "네트워크 보안 이벤트가 감지되었습니다. (SSH 로그인 성공 시점 기준)",
       "color": 15158332,
       "fields": [
 
@@ -15,7 +15,7 @@
           "inline": false
         },
         {
-          "name": "🕒 Event Time",
+          "name": "🕒 Login Event Time",
           "value": "`{{ time or 'Unknown' }}`",
           "inline": true
         },
@@ -25,7 +25,24 @@
           "inline": true
         },
 
-        {# --- Row 2: Geo / IP --- #}
+        {# --- Row 2: Correlation / Accept Info --- #}
+        {
+          "name": "🧩 Socket",
+          "value": "**sock_id:** `{{ sock_id if sock_id is defined and sock_id else 'N/A' }}`",
+          "inline": true
+        },
+        {
+          "name": "🟦 Accept Time",
+          "value": "`{{ accept_time if accept_time is defined and accept_time else 'N/A' }}`",
+          "inline": true
+        },
+        {
+          "name": "🧾 Accept TS",
+          "value": "`{{ accept_ts if accept_ts is defined and accept_ts else 'N/A' }}`",
+          "inline": true
+        },
+
+        {# --- Row 3: Geo / IP --- #}
         {
           "name": "🌍 Geo",
           "value": "**Country:** `{{ country_code if country_code is defined and country_code else 'N/A' }}`",
@@ -33,51 +50,51 @@
         },
         {
           "name": "🧷 Source",
-          "value": "`{{ payload.net.source.endpoint if payload.net is defined and payload.net.source is defined and payload.net.source and payload.net.source.endpoint is defined else 'N/A' }}`",
+          "value": "`{{ payload.net.source.endpoint if payload is defined and payload.net is defined and payload.net.source is defined and payload.net.source and payload.net.source.endpoint is defined else (src_ip if src_ip is defined and src_ip else 'N/A') }}`",
           "inline": true
         },
         {
           "name": "🎯 Destination",
-          "value": "`{{ payload.net.destination.endpoint if payload.net is defined and payload.net.destination is defined and payload.net.destination and payload.net.destination.endpoint is defined else 'N/A' }}`",
+          "value": "`{{ payload.net.destination.endpoint if payload is defined and payload.net is defined and payload.net.destination is defined and payload.net.destination and payload.net.destination.endpoint is defined else 'N/A' }}`",
           "inline": true
         },
 
-        {# --- Row 3: Protocol / State / Bytes --- #}
+        {# --- Row 4: Protocol / State / Bytes --- #}
         {
           "name": "🧪 Protocol",
-          "value": "`{{ payload.net.proto if payload.net is defined and payload.net.proto is defined and payload.net.proto else 'N/A' }}`",
+          "value": "`{{ payload.net.proto if payload is defined and payload.net is defined and payload.net.proto is defined and payload.net.proto else 'N/A' }}`",
           "inline": true
         },
         {
           "name": "🔁 State",
-          "value": "`{{ payload.net.state if payload.net is defined and payload.net.state is defined and payload.net.state else 'N/A' }}`",
+          "value": "`{{ payload.net.state if payload is defined and payload.net is defined and payload.net.state is defined and payload.net.state else 'N/A' }}`",
           "inline": true
         },
         {
           "name": "📦 Bytes",
-          "value": "`{{ payload.net.bytes if payload.net is defined and payload.net.bytes is defined and payload.net.bytes is not none else 'N/A' }}`",
+          "value": "`{{ payload.net.bytes if payload is defined and payload.net is defined and payload.net.bytes is defined and payload.net.bytes is not none else 'N/A' }}`",
           "inline": true
         },
 
-        {# --- Row 4: Process Context --- #}
+        {# --- Row 5: Process Context --- #}
         {
           "name": "⚙️ Command",
-          "value": "Run: `{{ payload.proc.comm if payload.proc is defined and payload.proc.comm is defined and payload.proc.comm else 'N/A' }}`",
+          "value": "Run: `{{ payload.proc.comm if payload is defined and payload.proc is defined and payload.proc.comm is defined and payload.proc.comm else 'N/A' }}`",
           "inline": true
         },
         {
           "name": "🆔 Process IDs",
-          "value": "**PID:** `{{ payload.proc.pid if payload.proc is defined and payload.proc.pid is defined and payload.proc.pid is not none else 'N/A' }}`\n**PPID:** `{{ payload.proc.ppid if payload.proc is defined and payload.proc.ppid is defined and payload.proc.ppid is not none else 'N/A' }}`",
+          "value": "**PID:** `{{ payload.proc.pid if payload is defined and payload.proc is defined and payload.proc.pid is defined and payload.proc.pid is not none else 'N/A' }}`\n**PPID:** `{{ payload.proc.ppid if payload is defined and payload.proc is defined and payload.proc.ppid is defined and payload.proc.ppid is not none else 'N/A' }}`\n**TID:** `{{ payload.proc.tid if payload is defined and payload.proc is defined and payload.proc.tid is defined and payload.proc.tid is not none else 'N/A' }}`",
           "inline": true
         },
         {
           "name": "👤 User Context",
-          "value": "**UID:** `{{ payload.proc.uid if payload.proc is defined and payload.proc.uid is defined and payload.proc.uid is not none else 'N/A' }}`\n**GID:** `{{ payload.proc.gid if payload.proc is defined and payload.proc.gid is defined and payload.proc.gid is not none else 'N/A' }}`",
+          "value": "**UID:** `{{ payload.proc.uid if payload is defined and payload.proc is defined and payload.proc.uid is defined and payload.proc.uid is not none else 'N/A' }}`\n**GID:** `{{ payload.proc.gid if payload is defined and payload.proc is defined and payload.proc.gid is defined and payload.proc.gid is not none else 'N/A' }}`",
           "inline": true
         }
 
         {# --- Optional: Via --- #}
-        {% if payload.net is defined and payload.net.via is defined and payload.net.via and payload.net.via.endpoint is defined %}
+        {% if payload is defined and payload.net is defined and payload.net.via is defined and payload.net.via and payload.net.via.endpoint is defined %}
         ,{
           "name": "🛰️ Via",
           "value": "`{{ payload.net.via.endpoint }}`",

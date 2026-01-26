@@ -6,6 +6,9 @@ from functools import lru_cache
 from typing import Dict, Optional
 
 from src.schema.alert_schema import TemplateDto
+from src.utils.logger import LogManager
+
+logger = LogManager.get_logger(__name__)
 
 
 class BaseStorageProvider(ABC):
@@ -34,28 +37,52 @@ class BaseStorageProvider(ABC):
         """
         Gets the active template version for a given key, utilizing a two-layer cache.
 
-        1. Checks the state cache with TTL.
-        2. If the cache is stale or missing, calls `update_check()` to get the latest state from the storage.
-        3. Once the active version ID is confirmed, retrieves the template content via the LRU cache (`_fetch_template`).
+        1. Checks the state cache. If a valid, non-stale entry exists, returns the cached content immediately.
+        2. If the cache is stale or missing, performs a lightweight check (`get_latest_state`) on the storage.
+        3. Compares the storage state with the cached state.
+        4. If states match, updates the timestamp and returns the cached content.
+        5. If states differ (or cache is missing), it fetches the full content, updates both caches, and returns the new content.
         """
         now = time.time()
         cached_state = self._state_cache.get(key)
 
-        # Check if state cache is stale
+        # 1. Memory First & TTL Check
         if (
-            not cached_state
-            or (now - cached_state["last_checked"]) > self.update_check_ttl
+            cached_state
+            and (now - cached_state["last_checked"]) <= self.update_check_ttl
         ):
-            latest_state = self.update_check(key)
-            if latest_state:
-                # Update state cache with the latest info and the current check time
-                latest_state["last_checked"] = now
-                self._state_cache[key] = latest_state
-            # If storage returns nothing, and there was a cached state, update its 'last_checked' time
-            elif cached_state:
-                self._state_cache[key]["last_checked"] = now
+            logger.debug(f"State for '{key}' is fresh. Using memory cache.")
+            return self._fetch_template(cached_state["version_id"], key)
 
-        # Use the final confirmed state from the cache
+        # 2. Lazy Validation: TTL expired or cache miss, perform lightweight check
+        logger.debug(f"State for '{key}' is stale or missing. Checking storage.")
+        latest_state = self.get_latest_state(key)
+
+        # 3. Conditional Update
+        if (
+            cached_state
+            and latest_state
+            and cached_state["version_id"] == latest_state["version_id"]
+        ):
+            # State is the same, just update the check time and use cached content
+            self._state_cache[key]["last_checked"] = now
+            logger.debug(f"State for '{key}' unchanged. Refreshed timestamp.")
+            return self._fetch_template(cached_state["version_id"], key)
+
+        if latest_state:
+            # State has changed or was missing. Update cache with the latest info.
+            logger.info(f"State for '{key}' has changed or is new. Updating cache.")
+            latest_state["last_checked"] = now
+            self._state_cache[key] = latest_state
+            # Invalidate the content cache for the new version_id to force a fresh fetch
+            self._fetch_template.cache_clear()  # A bit aggressive, but ensures consistency
+        elif key in self._state_cache:
+            # The template was deleted from storage. Invalidate the cache.
+            logger.info(f"Template '{key}' not found in storage. Invalidating cache.")
+            del self._state_cache[key]
+            self._fetch_template.cache_clear()
+
+        # 4. Use the final confirmed state from the cache (or lack thereof)
         final_state = self._state_cache.get(key)
         if not final_state:
             return None
@@ -64,10 +91,10 @@ class BaseStorageProvider(ABC):
         return self._fetch_template(final_state["version_id"], key)
 
     @abstractmethod
-    def update_check(self, key: str) -> Optional[dict]:
+    def get_latest_state(self, key: str) -> Optional[dict]:
         """
-        Checks the underlying storage for the latest state of a template.
-        This method should be implemented by concrete providers.
+        [Lightweight Check] Checks the underlying storage for the latest state of a template.
+        This method should be implemented by concrete providers and be highly efficient.
 
         Args:
             key: The template key (e.g., "discord/error_report").
@@ -104,6 +131,13 @@ class BaseStorageProvider(ABC):
         pass
 
     # --- Write Operations (Optional) ---
+    def _invalidate_cache(self, key: str):
+        """Invalidates both state and content cache for a given key."""
+        if key in self._state_cache:
+            del self._state_cache[key]
+            logger.info(f"Invalidated state cache for key '{key}'.")
+        self._fetch_template.cache_clear()
+        logger.info("Cleared content cache (LRU).")
 
     def push(
         self,

@@ -34,9 +34,9 @@ class FileSystemProvider(BaseStorageProvider):
         safe_key = os.path.normpath(os.path.join("/", key)).lstrip("/\\")
         return os.path.join(self.template_dir, safe_key)
 
-    def update_check(self, key: str) -> Optional[dict]:
+    def get_latest_state(self, key: str) -> Optional[dict]:
         """
-        Checks the file's mtime to detect changes. The mtime (float) is used
+        [Lightweight Check] Checks the file's mtime to detect changes. The mtime (float) is used
         as both the version ID (int) and the update timestamp (float).
         """
         file_path = self._get_path(key)
@@ -45,7 +45,9 @@ class FileSystemProvider(BaseStorageProvider):
 
         try:
             mtime = os.path.getmtime(file_path)  # This is already a float timestamp
-            logger.debug(f"Update check for '{key}': mtime is {mtime}.")
+            logger.debug(
+                f"Performing lightweight state check for '{key}': mtime is {mtime}."
+            )
             return {"version_id": int(mtime), "timestamp": mtime}
         except OSError as e:
             logger.error(f"Error checking file '{file_path}': {e}")

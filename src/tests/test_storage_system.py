@@ -85,22 +85,24 @@ class TestStorageSystem(unittest.TestCase):
         self.manager.push(key, "content v1", "tester")
 
         with patch.object(
-            self.db_provider, "update_check", wraps=self.db_provider.update_check
-        ) as mock_update_check:
-            # First call: cache is empty -> update_check is called
+            self.db_provider,
+            "get_latest_state",
+            wraps=self.db_provider.get_latest_state,
+        ) as mock_get_latest_state:
+            # First call: cache is empty -> get_latest_state is called
             self.manager.get_active_version(key)
-            self.assertEqual(mock_update_check.call_count, 1)
+            self.assertEqual(mock_get_latest_state.call_count, 1)
 
-            # Second call within TTL: uses cache -> update_check is not called
+            # Second call within TTL: uses cache -> get_latest_state is not called
             self.manager.get_active_version(key)
-            self.assertEqual(mock_update_check.call_count, 1)
+            self.assertEqual(mock_get_latest_state.call_count, 1)
 
             # Wait for TTL to expire (TTL is 1 second in setUp)
             time.sleep(1.5)
 
-            # Third call after TTL expiry: cache is stale -> update_check is called again
+            # Third call after TTL expiry: cache is stale -> get_latest_state is called again
             self.manager.get_active_version(key)
-            self.assertEqual(mock_update_check.call_count, 2)
+            self.assertEqual(mock_get_latest_state.call_count, 2)
 
     def test_4_lru_cache_for_content(self):
         """Test if the content cache (LRU) works correctly."""
@@ -140,14 +142,10 @@ class TestStorageSystem(unittest.TestCase):
         self.assertIsNotNone(active_template)
         self.assertEqual(active_template.content, "content v2")
 
-        # Checkout v1
+        # Checkout v1, which should automatically invalidate the cache
         self.manager.checkout(key, v1_dto.version_id, "checker")
 
-        # Clear the local state cache in the provider to force a re-fetch of the state
-        if key in self.db_provider._state_cache:
-            del self.db_provider._state_cache[key]
-
-        # Active version should now be v1
+        # Active version should now be v1, fetched fresh from the provider
         active_template_after_checkout = self.manager.get_active_version(key)
         self.assertIsNotNone(active_template_after_checkout)
         self.assertEqual(active_template_after_checkout.content, "content v1")

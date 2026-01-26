@@ -129,7 +129,9 @@ def test_format_payload_uses_hardcoded_fallback_when_config_is_empty(mocker, ren
     """
     Test format_payload uses hardcoded subject when config default is empty.
     """
-    mocker.patch("src.sender_providers.email.settings.EMAIL_CONFIG.DEFAULT_SUBJECT", "")
+    mocker.patch(
+        "src.sender_providers.provider.email.settings.EMAIL_CONFIG.DEFAULT_SUBJECT", ""
+    )
     email_provider = EmailProvider(renderer=renderer)
 
     rendered_content = "Single Line Subject"

@@ -48,11 +48,12 @@ class DatabaseProvider(BaseStorageProvider):
         finally:
             db.close()
 
-    def update_check(self, key: str) -> Optional[dict]:
+    def get_latest_state(self, key: str) -> Optional[dict]:
         """
-        Checks the `template_states` table for the latest update timestamp for a given key.
+        [Lightweight Check] Checks the `template_states` table for the latest
+        update timestamp for a given key.
         """
-        logger.debug(f"Performing update check for key '{key}' in DB.")
+        logger.debug(f"Performing lightweight state check for key '{key}' in DB.")
         with self.get_db() as db:
             state = (
                 db.query(TemplateState)
@@ -71,14 +72,22 @@ class DatabaseProvider(BaseStorageProvider):
     def _perform_fetch(self, version_id: int, key: str) -> Optional[TemplateDto]:
         """
         Fetches the complete template data by its version ID and constructs the DTO.
-        The 'key' parameter is unused here as version_id is a unique primary key.
+        The 'key' is used as a safeguard in case of data inconsistency, but version_id
+        is the primary lookup identifier.
         """
-        logger.debug(f"Performing fetch for version_id '{version_id}' from DB.")
+        logger.debug(f"Performing full fetch for version_id '{version_id}' from DB.")
         with self.get_db() as db:
             history = (
                 db.query(AlertTemplate).filter(AlertTemplate.id == version_id).first()
             )
             if not history:
+                return None
+
+            # Safeguard: ensure the fetched history matches the requested key
+            if history.template_key != key:
+                logger.error(
+                    f"Data inconsistency detected: version_id {version_id} belongs to key '{history.template_key}', but was requested for key '{key}'."
+                )
                 return None
 
             state = (
@@ -126,13 +135,14 @@ class DatabaseProvider(BaseStorageProvider):
 
             if checkout:
                 self.checkout(key, new_history.id, created_by)
-                # After checkout, a state is guaranteed to exist.
+                # After checkout, a state is guaranteed to exist. The cache will be
+                # invalidated by the checkout call.
                 final_state = (
                     db.query(TemplateState)
                     .filter(TemplateState.template_key == key)
                     .one()
                 )
-                return TemplateDto(
+                dto = TemplateDto(
                     version_id=new_history.id,
                     template_key=new_history.template_key,
                     content=new_history.content,
@@ -140,6 +150,9 @@ class DatabaseProvider(BaseStorageProvider):
                     updated_by=final_state.updated_by,
                     description=new_history.description,
                 )
+                # Invalidate cache since a new version was pushed and checked out
+                self._invalidate_cache(key)
+                return dto
             else:
                 # If not checking out, the state is unchanged. Return a DTO representing
                 # the version just created, even if it's not active.
@@ -154,7 +167,8 @@ class DatabaseProvider(BaseStorageProvider):
 
     def checkout(self, key: str, version_id: int, updated_by: str) -> None:
         """
-        Performs an UPSERT on the `template_states` table to set the active version.
+        Performs an UPSERT on the `template_states` table to set the active version
+        and invalidates the cache.
         """
         with self.get_db() as db:
             # Ensure the target version exists
@@ -186,20 +200,30 @@ class DatabaseProvider(BaseStorageProvider):
                 db.execute(on_update_stmt)
             else:
                 # Use session.merge() for other databases (e.g., PostgreSQL)
+                # Note: merge is less efficient but more compatible.
                 state_data = {
                     "template_key": key,
                     "active_version_id": version_id,
                     "updated_by": updated_by,
                     "updated_at": now_utc,
                 }
-                db.merge(TemplateState(**state_data))
+                # Check if the state already exists to decide on create vs update
+                existing_state = (
+                    db.query(TemplateState).filter_by(template_key=key).first()
+                )
+                if existing_state:
+                    existing_state.active_version_id = version_id
+                    existing_state.updated_by = updated_by
+                    existing_state.updated_at = now_utc
+                else:
+                    new_state = TemplateState(**state_data)
+                    db.add(new_state)
 
             db.commit()
             logger.info(f"Checked out version {version_id} for key '{key}'.")
 
             # Invalidate state cache after update
-            if key in self._state_cache:
-                del self._state_cache[key]
+            self._invalidate_cache(key)
 
     def delete_version(self, version_id: int, deleted_by: str) -> None:
         """
@@ -225,8 +249,9 @@ class DatabaseProvider(BaseStorageProvider):
                 logger.warning(
                     f"User '{deleted_by}' is deleting template version {version_id} ('{history_to_delete.template_key}')."
                 )
+                # Invalidate cache before deleting
+                self._invalidate_cache(history_to_delete.template_key)
                 db.delete(history_to_delete)
                 db.commit()
-                # Content cache for this version_id will now return None, which is correct.
             else:
                 raise ValueError(f"Template version ID '{version_id}' not found.")
