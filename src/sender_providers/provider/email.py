@@ -5,7 +5,7 @@ import json
 
 from src.core.config import settings
 from src.sender_providers.renderer import TemplateRenderer
-from src.sender_providers.base import BaseSenderProvider
+from src.sender_providers.provider.sender_base import BaseSenderProvider
 from src.utils.logger import LogManager
 
 logger = LogManager.get_logger(__name__)

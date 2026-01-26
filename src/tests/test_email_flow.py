@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock
 from src.dispatcher import NotificationDispatcher
-from src.sender_providers.email import EmailProvider
+from src.sender_providers.provider.email import EmailProvider
 from src.schema.alert_schema import TemplateDto
 import datetime  # Added missing datetime import
 

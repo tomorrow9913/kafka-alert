@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 from src.dispatcher import NotificationDispatcher
-from src.sender_providers.base import BaseSenderProvider
+from src.sender_providers.provider.sender_base import BaseSenderProvider
 
 
 @pytest.mark.asyncio

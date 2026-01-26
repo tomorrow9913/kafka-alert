@@ -1,6 +1,6 @@
 import pytest
 import json
-from src.sender_providers.discord import DiscordProvider
+from src.sender_providers.provider.discord import DiscordProvider
 
 
 @pytest.fixture

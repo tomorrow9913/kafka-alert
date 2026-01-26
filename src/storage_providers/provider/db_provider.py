@@ -10,7 +10,7 @@ from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from src.core.config import settings
 from src.schema.alert_schema import TemplateDto
-from src.storage_providers.models import AlertTemplate, TemplateState
+from src.storage_providers.models import AlertTemplate, TemplateState, Base
 from src.storage_providers.provider.storage_base import BaseStorageProvider
 from src.utils.logger import LogManager
 
@@ -27,6 +27,9 @@ class DatabaseProvider(BaseStorageProvider):
         super().__init__(**kwargs)
         db_url = db_url or settings.DATABASE_CONFIG.DATABASE_URL
         self.engine = create_engine(db_url)
+
+        Base.metadata.create_all(bind=self.engine)
+
         self.SessionLocal = sessionmaker(
             autocommit=False, autoflush=False, bind=self.engine
         )

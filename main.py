@@ -7,9 +7,9 @@ from src.callback import callbacks
 from src.dispatcher import NotificationDispatcher
 
 # --- Import Sender Providers ---
-from src.sender_providers.discord import DiscordProvider
-from src.sender_providers.slack import SlackProvider
-from src.sender_providers.email import EmailProvider
+from src.sender_providers.provider.discord import DiscordProvider
+from src.sender_providers.provider.slack import SlackProvider
+from src.sender_providers.provider.email import EmailProvider
 
 # --- Import Storage and Rendering Infrastructure ---
 from src.storage_providers.provider.db_provider import DatabaseProvider
