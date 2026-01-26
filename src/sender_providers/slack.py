@@ -1,14 +1,20 @@
 import aiohttp
 import json
 from typing import Dict, Any, Union, List, Optional
-from src.sender_providers.base import BaseProvider
+
+from src.sender_providers.renderer import TemplateRenderer
+from src.sender_providers.base import BaseSenderProvider
 from src.utils.logger import LogManager
+
 from src.core.config import settings
 
 logger = LogManager.get_logger(__name__)
 
 
-class SlackProvider(BaseProvider):
+class SlackProvider(BaseSenderProvider):
+    def __init__(self, renderer: TemplateRenderer):
+        super().__init__(renderer)
+
     @property
     def default_destination(self) -> Optional[str]:
         return settings.SLACK_WEBHOOK_URL
@@ -17,14 +23,16 @@ class SlackProvider(BaseProvider):
         return f"{template_name}.json.j2"
 
     def format_payload(
-        self, rendered_content: str, metadata: Dict[str, Any]
+        self, rendered_content: Union[str, Dict[str, Any]], metadata: Dict[str, Any]
     ) -> Union[Dict[str, Any], str]:
+        if isinstance(rendered_content, dict):
+            return rendered_content
         try:
             return json.loads(rendered_content)
         except json.JSONDecodeError as e:
             logger.error(f"Failed to decode rendered Slack template as JSON: {e}")
-            context = metadata if isinstance(metadata, dict) else {"metadata": metadata}
-            return self.get_fallback_payload(e, context)
+            # Fallback: return the original string; downstream send() will validate type.
+            return rendered_content
 
     def get_fallback_payload(
         self, error: Exception, context: Dict[str, Any]

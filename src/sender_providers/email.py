@@ -3,14 +3,18 @@ from email.message import EmailMessage
 import aiosmtplib
 import json
 
-from src.sender_providers.base import BaseProvider
-from src.utils.logger import LogManager
 from src.core.config import settings
+from src.sender_providers.renderer import TemplateRenderer
+from src.sender_providers.base import BaseSenderProvider
+from src.utils.logger import LogManager
 
 logger = LogManager.get_logger(__name__)
 
 
-class EmailProvider(BaseProvider):
+class EmailProvider(BaseSenderProvider):
+    def __init__(self, renderer: TemplateRenderer):
+        super().__init__(renderer)
+
     @property
     def default_destination(self) -> Optional[str]:
         return settings.EMAIL_CONFIG.DEFAULT_TO_EMAIL

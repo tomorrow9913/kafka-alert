@@ -1,13 +1,13 @@
 from typing import Dict, Any
 
-from src.sender_providers.base import BaseProvider
+from src.sender_providers.base import BaseSenderProvider
 from src.utils.logger import LogManager
 
 logger = LogManager.get_logger(__name__)
 
 
 class NotificationDispatcher:
-    def __init__(self, providers: Dict[str, BaseProvider]) -> None:
+    def __init__(self, providers: Dict[str, BaseSenderProvider]) -> None:
         self.providers = providers
 
     async def process(self, message: Dict[str, Any]) -> None:

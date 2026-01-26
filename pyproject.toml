@@ -17,10 +17,13 @@ dependencies = [
   "aiosmtplib>=5.0.0",
   "apprise>=1.9.6",
   "discordwebhook>=1.0.3",
+  "greenlet>=3.3.0",
   "jinja2>=3.1.6",
   "kafka-python-ng>=2.2.3",
   "loguru>=0.7.3",
-  "pydantic-settings>=2.12.0"
+  "psycopg2>=2.9.11",
+  "pydantic-settings>=2.12.0",
+  "sqlalchemy>=2.0.46"
 ]
 description = "Add your description here"
 name = "kafka-alert"
@@ -30,3 +33,7 @@ version = "0.1.0"
 
 [tool.bandit]
 exclude_dirs = ["tests", "venv"]
+
+[tool.mypy]
+explicit_package_bases = true
+namespace_packages = true

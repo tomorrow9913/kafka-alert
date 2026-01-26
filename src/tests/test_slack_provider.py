@@ -7,9 +7,9 @@ class TestSlackProvider:
     """Unit tests for SlackProvider methods."""
 
     @pytest.fixture
-    def provider(self):
+    def provider(renderer):
         """Create a SlackProvider instance for testing."""
-        return SlackProvider()
+        return SlackProvider(renderer=renderer)
 
     def test_apply_template_rules(self, provider):
         """Test that apply_template_rules correctly formats template names."""

@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Union, List, Optional
 import json
-from src.renderer import TemplateRenderer
+from src.sender_providers.renderer import TemplateRenderer
 
 
-class BaseProvider(ABC):
-    def __init__(self, template_dir: str = "templates"):
-        self.renderer = TemplateRenderer(template_dir)
+class BaseSenderProvider(ABC):
+    def __init__(self, renderer: TemplateRenderer):
+        self.renderer = renderer
 
     @property
     def default_destination(self) -> Optional[str]:

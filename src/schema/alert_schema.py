@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # src/utils/alert/schema.py
+import datetime
 from enum import Enum
 from typing import Any, Dict, Optional
 
@@ -28,3 +29,17 @@ class AlertPayload(BaseModel):
                 "Both 'template' and 'template_content' cannot be set at the same time."
             )
         return self
+
+
+class TemplateDto(BaseModel):
+    """
+    Data Transfer Object for a template, returned by storage providers.
+    This is the final, externally-facing representation.
+    """
+
+    version_id: int
+    template_key: str
+    content: str
+    updated_at: datetime.datetime
+    updated_by: str
+    description: Optional[str] = None

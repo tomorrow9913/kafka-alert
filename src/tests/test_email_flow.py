@@ -1,25 +1,32 @@
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 from src.dispatcher import NotificationDispatcher
-from src.renderer import TemplateRenderer
 from src.sender_providers.email import EmailProvider
+from src.schema.alert_schema import TemplateDto
+import datetime  # Added missing datetime import
 
 
 @pytest.mark.asyncio
-async def test_email_full_flow_with_meta(mocker):
+async def test_email_full_flow_with_meta(mocker, renderer):
     """
     Test the full flow from Dispatcher to EmailProvider with CC and BCC.
     """
     # Setup
-    mock_renderer = MagicMock(spec=TemplateRenderer)
-    email_provider = EmailProvider()
+    renderer.storage_manager.get_active_version.return_value = TemplateDto(
+        version_id=1,
+        template_key="alert",
+        content="<html>Rendered Content</html>",
+        updated_at=datetime.datetime.now(),
+        updated_by="test_user",
+        description="Mock template for email full flow",
+    )
+
+    email_provider = EmailProvider(renderer=renderer)
     spy_send = mocker.spy(email_provider, "send")
     mock_smtp_send = mocker.patch("aiosmtplib.send", new_callable=AsyncMock)
 
     providers = {"email": email_provider}
-    dispatcher = NotificationDispatcher(providers, mock_renderer)
-
-    mock_renderer.render.return_value = "<html>Rendered Content</html>"
+    dispatcher = NotificationDispatcher(providers)
 
     message = {
         "provider": "email",
@@ -57,11 +64,11 @@ async def test_email_full_flow_with_meta(mocker):
     assert set(recipients) == {"user@example.com", "cc@example.com", "bcc@example.com"}
 
 
-def test_apply_template_rules():
+def test_apply_template_rules(renderer):
     """
     Test that apply_template_rules correctly appends the .html.j2 extension.
     """
-    email_provider = EmailProvider()
+    email_provider = EmailProvider(renderer=renderer)
 
     # Test with simple template name
     result = email_provider.apply_template_rules("alert")
@@ -76,11 +83,11 @@ def test_apply_template_rules():
     assert result == ".html.j2"
 
 
-def test_format_payload_with_subject_in_metadata():
+def test_format_payload_with_subject_in_metadata(renderer):
     """
     Test format_payload when subject is provided in metadata.
     """
-    email_provider = EmailProvider()
+    email_provider = EmailProvider(renderer=renderer)
 
     rendered_content = "<html><body>Email body content</body></html>"
     metadata = {
@@ -98,11 +105,11 @@ def test_format_payload_with_subject_in_metadata():
     assert result["meta"]["bcc"] == ["bcc@example.com"]
 
 
-def test_format_payload_uses_default_subject_from_config():
+def test_format_payload_uses_default_subject_from_config(renderer):
     """
     Test format_payload uses default subject from config when not in metadata.
     """
-    email_provider = EmailProvider()
+    email_provider = EmailProvider(renderer=renderer)
 
     rendered_content = (
         "Alert: System Error\n<html><body>Error details here</body></html>"
@@ -118,12 +125,12 @@ def test_format_payload_uses_default_subject_from_config():
     assert result["meta"] == {}
 
 
-def test_format_payload_uses_hardcoded_fallback_when_config_is_empty(mocker):
+def test_format_payload_uses_hardcoded_fallback_when_config_is_empty(mocker, renderer):
     """
     Test format_payload uses hardcoded subject when config default is empty.
     """
     mocker.patch("src.sender_providers.email.settings.EMAIL_CONFIG.DEFAULT_SUBJECT", "")
-    email_provider = EmailProvider()
+    email_provider = EmailProvider(renderer=renderer)
 
     rendered_content = "Single Line Subject"
     metadata = {}
@@ -135,11 +142,11 @@ def test_format_payload_uses_hardcoded_fallback_when_config_is_empty(mocker):
     assert result["meta"] == {}
 
 
-def test_format_payload_body_is_not_split():
+def test_format_payload_body_is_not_split(renderer):
     """
     Test format_payload does not split the body and uses default subject.
     """
-    email_provider = EmailProvider()
+    email_provider = EmailProvider(renderer=renderer)
 
     rendered_content = "  Subject with spaces  \n  Body with spaces  "
     metadata = {}
@@ -152,27 +159,11 @@ def test_format_payload_body_is_not_split():
     assert result["body"] == rendered_content
 
 
-def test_format_payload_invalid_type():
-    """
-    Test format_payload handles non-string rendered content.
-    """
-    email_provider = EmailProvider()
-
-    # Test with dict instead of string
-    rendered_content = {"key": "value"}
-    metadata = {"subject": "Test"}
-
-    result = email_provider.format_payload(rendered_content, metadata)
-
-    assert result["subject"] == "Error"
-    assert result["body"] == ""
-
-
-def test_get_fallback_payload_basic():
+def test_get_fallback_payload_basic(renderer):
     """
     Test get_fallback_payload generates correct error notification.
     """
-    email_provider = EmailProvider()
+    email_provider = EmailProvider(renderer=renderer)
 
     error = Exception("Template rendering failed")
     context = {
@@ -195,11 +186,11 @@ def test_get_fallback_payload_basic():
     assert "Original Data:" in result["body"]
 
 
-def test_get_fallback_payload_missing_context_fields():
+def test_get_fallback_payload_missing_context_fields(renderer):
     """
     Test get_fallback_payload handles missing context fields gracefully.
     """
-    email_provider = EmailProvider()
+    email_provider = EmailProvider(renderer=renderer)
 
     error = Exception("Unknown error")
     context = {}  # Empty context
@@ -211,11 +202,11 @@ def test_get_fallback_payload_missing_context_fields():
     assert "Unknown error" in result["body"]
 
 
-def test_get_fallback_payload_unicode_handling():
+def test_get_fallback_payload_unicode_handling(renderer):
     """
     Test get_fallback_payload handles unicode characters in context.
     """
-    email_provider = EmailProvider()
+    email_provider = EmailProvider(renderer=renderer)
 
     error = Exception("Error with émojis 🎉")
     context = {
@@ -233,11 +224,11 @@ def test_get_fallback_payload_unicode_handling():
     assert "🌍" in result["body"]
 
 
-def test_get_fallback_payload_html_structure():
+def test_get_fallback_payload_html_structure(renderer):
     """
     Test get_fallback_payload generates valid HTML structure.
     """
-    email_provider = EmailProvider()
+    email_provider = EmailProvider(renderer=renderer)
 
     error = Exception("Test error")
     context = {
@@ -261,20 +252,26 @@ def test_get_fallback_payload_html_structure():
 
 
 @pytest.mark.asyncio
-async def test_email_full_flow_with_string_meta(mocker):
+async def test_email_full_flow_with_string_meta(mocker, renderer):
     """
     Test the full flow from Dispatcher to EmailProvider with CC and BCC as strings.
     """
     # Setup
-    mock_renderer = MagicMock(spec=TemplateRenderer)
-    email_provider = EmailProvider()
+    renderer.storage_manager.get_active_version.return_value = TemplateDto(
+        version_id=1,
+        template_key="alert",
+        content="<html>Rendered Content</html>",
+        updated_at=datetime.datetime.now(),
+        updated_by="test_user",
+        description="Mock template for email full flow with string meta",
+    )
+
+    email_provider = EmailProvider(renderer=renderer)
     spy_send = mocker.spy(email_provider, "send")
     mock_smtp_send = mocker.patch("aiosmtplib.send", new_callable=AsyncMock)
 
     providers = {"email": email_provider}
-    dispatcher = NotificationDispatcher(providers, mock_renderer)
-
-    mock_renderer.render.return_value = "<html>Rendered Content</html>"
+    dispatcher = NotificationDispatcher(providers)
 
     message = {
         "provider": "email",

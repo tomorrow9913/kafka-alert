@@ -4,9 +4,9 @@ from src.sender_providers.discord import DiscordProvider
 
 
 @pytest.fixture
-def discord_provider():
+def discord_provider(renderer):
     """Fixture to create a DiscordProvider instance."""
-    return DiscordProvider()
+    return DiscordProvider(renderer=renderer)
 
 
 class TestApplyTemplateRules:

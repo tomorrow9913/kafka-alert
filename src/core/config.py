@@ -46,6 +46,12 @@ class EmailConfig(BaseModel):
     DEFAULT_SUBJECT: str = "Alert Notification"
 
 
+class DatabaseConfig(BaseModel):
+    """Database configurations."""
+
+    DATABASE_URL: str = "sqlite:///./test.db"
+
+
 class Settings(BaseSettings):
     """Main settings object that aggregates all configurations."""
 
@@ -65,6 +71,7 @@ class Settings(BaseSettings):
     DISCORD_WEBHOOK_URL: Optional[str] = None
     SLACK_WEBHOOK_URL: Optional[str] = None
     EMAIL_CONFIG: EmailConfig = EmailConfig()
+    DATABASE_CONFIG: DatabaseConfig = DatabaseConfig()
 
     model_config = SettingsConfigDict(
         env_file=".env",
