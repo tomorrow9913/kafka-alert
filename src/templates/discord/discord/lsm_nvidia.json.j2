@@ -1,0 +1,43 @@
+{
+  "username": "GPU Watchdog",
+  "avatar_url": "https://cdn-icons-png.flaticon.com/512/8636/8636074.png",
+  "embeds": [
+    {
+      "title": "🔥 Abnormal GPU Usage Detected",
+      "description": "### ⚠️ 임계치 초과 경고\n**GPU 리소스 사용 패턴이 비정상적입니다.**\n즉시 확인이 필요합니다.",
+      "color": 10181046,
+      "fields": [
+        {
+          "name": "🖥️ Node (Location)",
+          "value": "`{{ payload.node }}`",
+          "inline": true
+        },
+        {
+          "name": "🆔 Process IDs",
+          "value": "**PID:** `{{ payload.proc.pid }}`\n**PPID:** `{{ payload.proc.ppid }}`",
+          "inline": true
+        },
+        {
+          "name": "👤 User Context",
+          "value": "**UID:** `{{ payload.proc.uid if payload.proc.uid is defined else 'N/A' }}`\n**GID:** `{{ payload.proc.gid if payload.proc.gid is defined else 'N/A' }}`",
+          "inline": true
+        },
+        {
+          "name": "⚙️ Command",
+          "value": "Run: `{{ payload.proc.comm }}`",
+          "inline": true
+        },
+        {
+          "name": "📂 Executable Path",
+          "value": "```bash\n{{ payload.path.split('\u0000')[0] }}\n```",
+          "inline": false
+        }
+      ],
+      "footer": {
+        "text": "GPU Resource Monitor • Event ID: {{ metadata.event_id if metadata and metadata.event_id else 'N/A' }}",
+        "icon_url": "https://cdn-icons-png.flaticon.com/512/2422/2422832.png"
+      },
+      "timestamp": "{{ time | replace(' ', 'T') }}Z"
+    }
+  ]
+}
