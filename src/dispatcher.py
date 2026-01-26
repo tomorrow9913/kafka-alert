@@ -1,6 +1,7 @@
 from typing import Dict, Any
 
 from src.sender_providers.provider.sender_base import BaseSenderProvider
+from src.utils.decorators import with_dlq_fallback
 from src.utils.logger import LogManager
 
 logger = LogManager.get_logger(__name__)
@@ -10,6 +11,7 @@ class NotificationDispatcher:
     def __init__(self, providers: Dict[str, BaseSenderProvider]) -> None:
         self.providers = providers
 
+    @with_dlq_fallback
     async def process(self, message: Dict[str, Any]) -> None:
         """
         Orchestrates the processing of a notification message.
@@ -42,43 +44,24 @@ class NotificationDispatcher:
 
         context = self._get_message_context(message)
 
-        try:
-            # 1. Apply template rules (only if template_name is present)
-            if template_name:
-                template_name = provider.apply_template_rules(template_name)
+        # 1. Apply template rules (only if template_name is present)
+        if template_name:
+            template_name = provider.apply_template_rules(template_name)
 
-            # 2. Delegate rendering to the provider
-            rendered_content = provider.render(
-                template_path=template_name,
-                template_content=template_content,
-                context=context,
-            )
+        # 2. Delegate rendering to the provider
+        rendered_content = provider.render(
+            template_path=template_name,
+            template_content=template_content,
+            context=context,
+        )
 
-            # 3. Format payload
-            metadata = context.get("_meta", {})
-            payload = provider.format_payload(rendered_content, metadata)
+        # 3. Format payload
+        metadata = context.get("_meta", {})
+        payload = provider.format_payload(rendered_content, metadata)
 
-            # 4. Send
-            await provider.send(destination, payload)
-            logger.info(f"Notification sent successfully via {provider_name}.")
-
-        except Exception as e:
-            logger.error(
-                f"Error processing notification for {provider_name}: {e}",
-                exc_info=True,
-            )
-            try:
-                # 5. Handle fallback
-                fallback_payload = provider.get_fallback_payload(e, context)
-                await provider.send(destination, fallback_payload)
-                logger.info(
-                    f"Fallback notification sent successfully via {provider_name}."
-                )
-            except Exception as fallback_error:
-                logger.critical(
-                    f"Failed to send fallback notification for {provider_name}: {fallback_error}",
-                    exc_info=True,
-                )
+        # 4. Send
+        await provider.send(destination, payload)
+        logger.info(f"Notification sent successfully via {provider_name}.")
 
     def _get_message_context(self, message: Dict[str, Any]) -> Dict[str, Any]:
         """Extracts the rendering context and metadata from the message data."""

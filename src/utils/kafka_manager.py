@@ -262,6 +262,23 @@ class KafkaManager:
             logger.error(f"Failed to enqueue message for topic '{topic}': {e}")
             raise
 
+    async def send_to_dlq(
+        self, message: dict, provider_name: str, error: Exception
+    ) -> None:
+        """Constructs and sends a message to the Dead Letter Queue."""
+        dlq_message = {
+            "original_message": message,
+            "error": str(error),
+            "provider": provider_name,
+        }
+        try:
+            await self.send_message(settings.KAFKA_DEAD_LETTER_TOPIC, dlq_message)
+            logger.info(
+                f"Message successfully sent to DLQ topic: {settings.KAFKA_DEAD_LETTER_TOPIC}"
+            )
+        except Exception as e:
+            logger.critical(f"Failed to send message to DLQ: {e}", exc_info=True)
+
 
 _kafka_manager_instance: Optional[KafkaManager] = None
 
