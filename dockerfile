@@ -10,7 +10,11 @@ WORKDIR /app
 # build-base: gcc, libc-dev, make
 # python3-dev: Python header files
 # zlib-dev: zlib headers (often needed for C extensions)
-RUN apk add --no-cache build-base python3-dev zlib-dev
+RUN apk add --no-cache \
+    build-base \
+    python3-dev \
+    zlib-dev \
+    postgresql-dev
 
 # Install dependencies using uv sync
 # This creates a virtual environment in /app/.venv
