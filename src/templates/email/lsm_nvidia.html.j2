@@ -1,0 +1,105 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>GPU Abnormal Usage Alert</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f4f7; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; font-size: 14px; line-height: 1.5; color: #2d3748;">
+
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f4f7; padding: 40px 0;">
+        <tr>
+            <td align="center">
+                <table border="0" cellpadding="0" cellspacing="0" width="600" class="container" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; width: 600px; max-width: 600px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
+
+                    <tr>
+                        <td align="center" style="padding: 35px 30px; border-bottom: 1px solid #edf2f7; background-color: #fffaf0;">
+                            <div style="display: inline-block; width: 60px; height: 60px; line-height: 60px; border-radius: 50%; margin-bottom: 15px; font-size: 28px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); background-color: #feebc8; color: #dd6b20;">
+                                🔥
+                            </div>
+                            <h1 style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: #9c4221;">
+                                Abnormal GPU Usage Detected
+                            </h1>
+                            <p style="margin: 8px 0 0 0; color: #718096; font-size: 14px; font-weight: 500;">
+                                ⚠️ 임계치 초과 경고: 리소스 사용 패턴이 비정상적입니다.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding: 35px;">
+
+                            <div style="margin-bottom: 25px;">
+                                <span style="text-transform: uppercase; letter-spacing: 0.05em; color: #a0aec0; font-size: 11px; font-weight: 700; display: block; margin-bottom: 10px;">🖥️ Infrastructure Context</span>
+                                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #edf2f7; border-radius: 8px;">
+                                    <tr>
+                                        <td style="padding: 15px;">
+                                            <span style="color: #718096; font-size: 11px; font-weight: bold; display: block;">Node (Location)</span>
+                                            <div style="color: #2d3748; font-weight: 600; font-size: 14px;">{{ node }}</div>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <div style="margin-bottom: 25px;">
+                                <span style="text-transform: uppercase; letter-spacing: 0.05em; color: #a0aec0; font-size: 11px; font-weight: 700; display: block; margin-bottom: 10px;">🆔 Process Identity</span>
+                                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: separate; border-spacing: 0;">
+                                    <tr>
+                                        <td style="padding: 12px 15px; background-color: #2d3748; border-radius: 6px 6px 0 0; color: #ffffff; font-weight: 600; font-family: monospace;">
+                                            <span style="color: #a0aec0; font-weight: normal; margin-right: 8px;">Command:</span> {{ payload.proc.comm }}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 0;">
+                                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border: 1px solid #e2e8f0; border-top: 0; border-radius: 0 0 6px 6px;">
+                                                <tr>
+                                                    <td width="50%" style="padding: 12px 15px; border-right: 1px solid #e2e8f0;">
+                                                        <div style="font-size: 11px; color: #718096; font-weight: bold; margin-bottom: 2px;">PID / PPID</div>
+                                                        <div style="font-family: monospace; font-size: 13px; color: #2d3748;">
+                                                            {{ payload.proc.pid }} <span style="color: #cbd5e0;">/</span> {{ payload.proc.ppid }}
+                                                        </div>
+                                                    </td>
+                                                    <td width="50%" style="padding: 12px 15px;">
+                                                        <div style="font-size: 11px; color: #718096; font-weight: bold; margin-bottom: 2px;">UID / GID</div>
+                                                        <div style="font-family: monospace; font-size: 13px; color: #2d3748;">
+                                                            {{ payload.proc.uid | default('N/A') }} <span style="color: #cbd5e0;">/</span> {{ payload.proc.gid | default('N/A') }}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <div>
+                                <span style="text-transform: uppercase; letter-spacing: 0.05em; color: #a0aec0; font-size: 11px; font-weight: 700; display: block; margin-bottom: 10px;">📂 Executable Path</span>
+                                <div style="background-color: #f7fafc; color: #4a5568; padding: 12px; border-radius: 6px; font-family: 'Courier New', Courier, monospace; font-size: 12px; word-break: break-all; border-left: 4px solid #ed8936; border: 1px solid #e2e8f0; border-left-width: 4px;">
+                                    {{ payload.path.split('\u0000')[0] }}
+                                </div>
+                            </div>
+
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td align="center" style="background-color: #f8fafc; padding: 25px; border-top: 1px solid #e2e8f0;">
+                            <p style="margin: 0; color: #718096; font-size: 12px; font-weight: 600;">📊 GPU Resource Monitor</p>
+                            <p style="margin: 5px 0 0 0; color: #a0aec0; font-size: 11px;">
+                                Detected at: {{ time }} UTC
+                            </p>
+                            <p style="margin: 2px 0 0 0; color: #cbd5e0; font-size: 10px; font-family: monospace;">
+                                Event ID: {{ metadata.event_id | default('N/A') }}
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+
+                <p style="text-align: center; margin-top: 25px; color: #a0aec0; font-size: 11px;">
+                    This is an automated system alert from GPU Watchdog. Please take immediate action if required.
+                </p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

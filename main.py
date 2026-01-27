@@ -1,14 +1,21 @@
 import asyncio
 
-from core.config import settings
-from utils.logger import LogManager
-from utils.kafka_manager import init_kafka_manager
-from callback import callbacks
-from core.dispatcher import NotificationDispatcher
-from core.renderer import TemplateRenderer
-from core.providers.discord import DiscordProvider
-from core.providers.slack import SlackProvider
-from core.providers.email import EmailProvider
+from src.core.config import settings
+from src.utils.logger import LogManager
+from src.utils.kafka_manager import init_kafka_manager
+from src.callback import callbacks
+from src.dispatcher import NotificationDispatcher
+
+# --- Import Sender Providers ---
+from src.sender_providers.provider.discord import DiscordProvider
+from src.sender_providers.provider.slack import SlackProvider
+from src.sender_providers.provider.email import EmailProvider
+
+# --- Import Storage and Rendering Infrastructure ---
+from src.storage_providers.provider.db_provider import DatabaseProvider
+from src.storage_providers.provider.file_provider import FileSystemProvider
+from src.storage_providers.storage_manager import TemplateStorageManager
+from src.sender_providers.renderer import TemplateRenderer
 
 logger = LogManager.get_logger(__name__)
 
@@ -21,15 +28,36 @@ async def main():
         )
         return
 
-    # 1. Initialize dependencies
-    renderer = TemplateRenderer()
-    providers = {
-        "discord": DiscordProvider(),
-        "slack": SlackProvider(),
-        "email": EmailProvider(),
-    }
-    dispatcher = NotificationDispatcher(providers, renderer)
+    # 1. Initialize dynamic template storage and rendering engine
+    try:
+        logger.info("Initializing template storage providers...")
+        db_provider = DatabaseProvider()
+        file_provider = FileSystemProvider()
 
+        # The order in the list defines the fallback chain: DB -> FileSystem
+        storage_manager = TemplateStorageManager(providers=[db_provider, file_provider])
+
+        # Create a single renderer instance backed by the storage manager
+        renderer = TemplateRenderer(storage_manager=storage_manager)
+        logger.info("Dynamic template engine initialized successfully.")
+
+    except Exception as e:
+        logger.critical(
+            f"Failed to initialize the template storage system: {e}", exc_info=True
+        )
+        return
+
+    # 2. Initialize sender providers with the shared renderer
+    logger.info("Initializing notification sender providers...")
+    providers = {
+        "discord": DiscordProvider(renderer=renderer),
+        "slack": SlackProvider(renderer=renderer),
+        "email": EmailProvider(renderer=renderer),
+    }
+    dispatcher = NotificationDispatcher(providers)
+    logger.info("Notification dispatcher is ready.")
+
+    # 3. Initialize and run the Kafka manager
     logger.info("Initializing Kafka manager...")
     kafka_manager = init_kafka_manager(
         bootstrap_servers=settings.KAFKA_BROKERS,
