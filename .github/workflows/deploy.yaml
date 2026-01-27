@@ -1,0 +1,70 @@
+name: Docker Build and Publish
+
+on:
+  push:
+    tags: [ 'v*.*.*' ] # v1.0.0 같은 태그 푸시 시 실행
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 1. 상세 버전 문자열 생성 (앱 내부 주입용)
+      - name: Generate App Version String
+        id: vars
+        run: |
+          # 날짜: 260120 형식
+          DATE=$(date +'%y%m%d')
+          # 해시: 7자리
+          SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          # 결과: v1.0.0-260120-abc1234
+          LONG_VERSION="${{ github.ref_name }}-${DATE}-${SHA}"
+          
+          echo "LONG_VERSION=$LONG_VERSION" >> $GITHUB_OUTPUT
+          echo "Generated version string: $LONG_VERSION"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log into registry ${{ env.REGISTRY }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 2. 이미지 태그 설정 (깔끔한 버전 & latest)
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            # v1.0.0 -> 1.0.0 (v 제거)
+            type=semver,pattern={{version}}
+            # 무조건 latest
+            type=raw,value=latest
+
+      # 3. 빌드 및 푸시 (build-args 추가됨)
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          # [핵심] Dockerfile의 ARG APP_VERSION에 상세 버전을 전달
+          build-args: |
+            APP_VERSION=${{ steps.vars.outputs.LONG_VERSION }}
