@@ -80,9 +80,11 @@ class EmailProvider(BaseSenderProvider):
         # To
         if isinstance(destination, list):
             to_emails = destination
+        elif isinstance(destination, str):
+            # 쉼표로 구분된 문자열일 경우 리스트로 분리하고 공백 제거
+            to_emails = [e.strip() for e in destination.split(",") if e.strip()]
         else:
             to_emails = [destination]
-        message["To"] = ",".join(to_emails)
 
         # Cc
         cc_emails = meta.get("cc", [])
