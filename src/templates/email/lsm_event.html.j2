@@ -1,91 +1,142 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
+
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>GPU Abnormal Usage Alert</title>
+    <title>Security Event Alert</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f4f4f7; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; font-size: 14px; line-height: 1.5; color: #2d3748;">
+
+<body
+    style="margin: 0; padding: 0; background-color: #f4f4f7; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; font-size: 14px; line-height: 1.5; color: #2d3748;">
 
     <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f4f7; padding: 40px 0;">
         <tr>
             <td align="center">
-                <table border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; width: 600px; max-width: 600px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
+
+                <table border="0" cellpadding="0" cellspacing="0" width="600" class="container"
+                    style="background-color: #ffffff; border-radius: 12px; overflow: hidden; width: 600px; max-width: 600px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
 
                     <tr>
-                        <td align="center" style="padding: 35px 30px; border-bottom: 1px solid #edf2f7; background-color: #fffaf0;">
-                            <div style="display: inline-block; width: 60px; height: 60px; line-height: 60px; border-radius: 50%; margin-bottom: 15px; font-size: 28px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); background-color: #feebc8; color: #dd6b20;">
-                                🔥
+                        <td align="center"
+                            style="padding: 35px 30px; border-bottom: 1px solid #edf2f7; {% if payload.action == 'BLOCK' %}background-color: #fff5f5;{% else %}background-color: #f0fff4;{% endif %}">
+
+                            <div
+                                style="display: inline-block; width: 60px; height: 60px; line-height: 60px; border-radius: 50%; margin-bottom: 15px; font-size: 28px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); {% if payload.action == 'BLOCK' %}background-color: #fed7d7; color: #c53030;{% else %}background-color: #c6f6d5; color: #2f855a;{% endif %}">
+                                {% if payload.action == 'BLOCK' %}🛡️{% else %}⚠️{% endif %}
                             </div>
-                            <h1 style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: #9c4221;">
-                                Abnormal GPU Usage Detected
+
+                            <h1
+                                style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px; {% if payload.action == 'BLOCK' %}color: #c53030;{% else %}color: #276749;{% endif %}">
+                                {{ payload.proc.event | upper }} Detected
                             </h1>
+
                             <p style="margin: 8px 0 0 0; color: #718096; font-size: 14px; font-weight: 500;">
-                                ⚠️ 임계치 초과 경고: 리소스 사용 패턴이 비정상적입니다.
+                                Policy Action: <strong
+                                    style="{% if payload.action == 'BLOCK' %}color: #e53e3e;{% else %}color: #38a169;{% endif %}">{{
+                                    payload.action }}</strong>
                             </p>
                         </td>
                     </tr>
 
                     <tr>
                         <td style="padding: 35px;">
+
                             <div style="margin-bottom: 25px;">
-                                <span style="text-transform: uppercase; letter-spacing: 0.05em; color: #a0aec0; font-size: 11px; font-weight: 700; display: block; margin-bottom: 10px;">🖥️ Infrastructure Context</span>
-                                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #edf2f7; border-radius: 8px; font-size: 13px;">
+                                <span
+                                    style="text-transform: uppercase; letter-spacing: 0.05em; color: #a0aec0; font-size: 11px; font-weight: 700; display: block; margin-bottom: 10px;">📦
+                                    Kubernetes Context</span>
+
+                                <table border="0" cellpadding="0" cellspacing="0" width="100%"
+                                    style="background-color: #f8fafc; border: 1px solid #edf2f7; border-radius: 8px;">
                                     {% if metadata %}
                                     <tr>
-                                        <td width="50%" style="padding: 12px; border-right: 1px solid #edf2f7; border-bottom: 1px solid #edf2f7;">
-                                            <span style="color: #718096; font-size: 11px; font-weight: bold; display: block;">Namespace</span>
-                                            <div style="color: #2d3748; font-weight: 600;">{{ metadata.namespace }}</div>
+                                        <td width="50%"
+                                            style="padding: 15px; border-right: 1px solid #edf2f7; border-bottom: 1px solid #edf2f7;">
+                                            <span
+                                                style="color: #718096; font-size: 11px; font-weight: bold; display: block;">Namespace</span>
+                                            <div style="color: #2d3748; font-weight: 600; font-size: 13px;">{{
+                                                metadata.namespace }}</div>
                                         </td>
-                                        <td width="50%" style="padding: 12px; border-bottom: 1px solid #edf2f7;">
-                                            <span style="color: #718096; font-size: 11px; font-weight: bold; display: block;">Pod Name</span>
-                                            <div style="color: #2d3748; font-weight: 600; word-break: break-all;">{{ metadata.pod }}</div>
+                                        <td width="50%" style="padding: 15px; border-bottom: 1px solid #edf2f7;">
+                                            <span
+                                                style="color: #718096; font-size: 11px; font-weight: bold; display: block;">Pod
+                                                Name</span>
+                                            <div
+                                                style="color: #2d3748; font-weight: 600; font-size: 13px; word-break: break-all;">
+                                                {{ metadata.pod }}</div>
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td style="padding: 12px; border-right: 1px solid #edf2f7;">
-                                            <span style="color: #718096; font-size: 11px; font-weight: bold; display: block;">Node</span>
-                                            <div style="color: #2d3748;">{{ metadata.node }}</div>
+                                        <td style="padding: 15px; border-right: 1px solid #edf2f7;">
+                                            <span
+                                                style="color: #718096; font-size: 11px; font-weight: bold; display: block;">Node</span>
+                                            <div style="color: #2d3748; font-size: 13px;">{{ metadata.node }}</div>
                                         </td>
-                                        <td style="padding: 12px;">
-                                            <span style="color: #718096; font-size: 11px; font-weight: bold; display: block;">Container</span>
-                                            <div style="color: #2d3748;">{{ metadata.container }}</div>
+                                        <td style="padding: 15px;">
+                                            <span
+                                                style="color: #718096; font-size: 11px; font-weight: bold; display: block;">Container</span>
+                                            <div style="color: #2d3748; font-size: 13px;">{{ metadata.container }}</div>
                                         </td>
                                     </tr>
                                     {% else %}
                                     <tr>
                                         <td style="padding: 15px;">
-                                            <span style="color: #718096; font-size: 11px; font-weight: bold; display: block;">Host Node</span>
-                                            <div style="color: #2d3748; font-weight: 600;">{{ node or 'Unknown Node' }}</div>
+                                            <span
+                                                style="color: #718096; font-size: 11px; font-weight: bold; display: block;">Host
+                                                Node</span>
+                                            <div style="color: #2d3748; font-weight: 600;">{{ node or 'Unknown Node' }}
+                                            </div>
                                         </td>
                                     </tr>
                                     {% endif %}
                                 </table>
                             </div>
 
-                            <div style="margin-bottom: 25px;">
-                                <span style="text-transform: uppercase; letter-spacing: 0.05em; color: #a0aec0; font-size: 11px; font-weight: 700; display: block; margin-bottom: 10px;">🆔 Process Identity</span>
-                                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: separate; border-spacing: 0; font-size: 13px;">
+                            <div style="margin-bottom: 30px;">
+                                <span
+                                    style="text-transform: uppercase; letter-spacing: 0.05em; color: #a0aec0; font-size: 11px; font-weight: 700; display: block; margin-bottom: 10px;">🆔
+                                    Process Identity</span>
+
+                                <table border="0" cellpadding="0" cellspacing="0" width="100%"
+                                    style="border-collapse: separate; border-spacing: 0;">
                                     <tr>
-                                        <td style="padding: 12px 15px; background-color: #2d3748; border-radius: 6px 6px 0 0; color: #ffffff; font-weight: 600; font-family: monospace;">
-                                            <span style="color: #a0aec0; font-weight: normal; margin-right: 8px;">Comm:</span> {{ payload.proc.comm }}
+                                        <td
+                                            style="padding: 12px 15px; background-color: #2d3748; border-radius: 6px 6px 0 0; color: #ffffff; font-weight: 600; font-family: monospace;">
+                                            <span
+                                                style="color: #a0aec0; font-weight: normal; margin-right: 8px;">Comm:</span>
+                                            {{ payload.proc.comm }}
                                         </td>
                                     </tr>
+
                                     <tr>
                                         <td style="padding: 0;">
-                                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border: 1px solid #e2e8f0; border-top: 0; border-radius: 0 0 6px 6px;">
+                                            <table border="0" cellpadding="0" cellspacing="0" width="100%"
+                                                style="border: 1px solid #e2e8f0; border-top: 0; border-radius: 0 0 6px 6px;">
                                                 <tr>
-                                                    <td width="33%" style="padding: 10px 15px; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">
-                                                        <div style="font-size: 10px; color: #718096; font-weight: bold;">PID / PPID</div>
-                                                        <div style="font-family: monospace;">{{ payload.proc.pid }} / {{ payload.proc.ppid }}</div>
+                                                    <td width="50%"
+                                                        style="padding: 12px 15px; border-right: 1px solid #e2e8f0;">
+                                                        <div
+                                                            style="font-size: 11px; color: #718096; font-weight: bold; margin-bottom: 2px;">
+                                                            PID / PPID</div>
+                                                        <div
+                                                            style="font-family: monospace; font-size: 13px; color: #2d3748;">
+                                                            {{ payload.proc.pid }} <span
+                                                                style="color: #cbd5e0;">/</span> {{ payload.proc.ppid }}
+                                                        </div>
                                                     </td>
-                                                    <td width="33%" style="padding: 10px 15px; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">
-                                                        <div style="font-size: 10px; color: #718096; font-weight: bold;">UID / GID</div>
-                                                        <div style="font-family: monospace;">{{ payload.proc.uid if payload.proc.uid is defined else 'N/A' }} / {{ payload.proc.gid if payload.proc.gid is defined else 'N/A' }}</div>
-                                                    </td>
-                                                    <td width="34%" style="padding: 10px 15px; border-bottom: 1px solid #e2e8f0;">
-                                                        <div style="font-size: 10px; color: #718096; font-weight: bold;">TID / Ret</div>
-                                                        <div style="font-family: monospace;">{{ payload.proc.tid }} / {{ payload.proc.ret }}</div>
+                                                    <td width="50%" style="padding: 12px 15px;">
+                                                        <div
+                                                            style="font-size: 11px; color: #718096; font-weight: bold; margin-bottom: 2px;">
+                                                            UID / GID</div>
+                                                        <div
+                                                            style="font-family: monospace; font-size: 13px; color: #2d3748;">
+                                                            {{ payload.proc.uid if payload.proc.uid is defined else
+                                                            'N/A' }} <span style="color: #cbd5e0;">/</span> {{
+                                                            payload.proc.gid if payload.proc.gid is defined else 'N/A'
+                                                            }}
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             </table>
@@ -95,59 +146,75 @@
                             </div>
 
                             <div>
-                                <span style="text-transform: uppercase; letter-spacing: 0.05em; color: #a0aec0; font-size: 11px; font-weight: 700; display: block; margin-bottom: 10px;">📋 Evidence Details</span>
+                                <span
+                                    style="text-transform: uppercase; letter-spacing: 0.05em; color: #a0aec0; font-size: 11px; font-weight: 700; display: block; margin-bottom: 10px;">📋
+                                    Evidence Details</span>
 
                                 {% if payload.cmdline %}
-                                <div style="margin-bottom: 12px;">
-                                    <div style="font-size: 11px; color: #718096; font-weight: bold; margin-bottom: 4px;">Full Command Line</div>
-                                    <div style="background-color: #f7fafc; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 12px; border: 1px solid #e2e8f0; word-break: break-all;">{{ payload.cmdline }}</div>
-                                </div>
-                                {% endif %}
-
-                                {% if payload.path %}
-                                <div style="margin-bottom: 12px;">
-                                    <div style="font-size: 11px; color: #718096; font-weight: bold; margin-bottom: 4px;">Target Path / Object</div>
-                                    <div style="background-color: #f7fafc; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 12px; border-left: 4px solid #ed8936; border: 1px solid #e2e8f0; border-left-width: 4px; word-break: break-all;">
-                                        {{ payload.path.split('\u0000')[0] }}
+                                <div style="margin-bottom: 15px;">
+                                    <span
+                                        style="color: #4a5568; font-size: 12px; font-weight: bold; display: block; margin-bottom: 6px;">⌨️
+                                        Full Command Line</span>
+                                    <div
+                                        style="background-color: #edf2f7; color: #2d3748; padding: 12px; border-radius: 6px; font-family: Consolas, Monaco, monospace; font-size: 12px; word-break: break-all; border: 1px solid #e2e8f0;">
+                                        {{ payload.cmdline }}
                                     </div>
                                 </div>
                                 {% endif %}
 
                                 {% if payload.exe %}
-                                <div style="margin-bottom: 12px;">
-                                    <div style="font-size: 11px; color: #718096; font-weight: bold; margin-bottom: 4px;">Executable Binary</div>
-                                    <div style="background-color: #f7fafc; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 12px; border: 1px solid #e2e8f0; word-break: break-all;">{{ payload.exe.split('\u0000')[0] }}</div>
+                                <div style="margin-bottom: 15px;">
+                                    <span
+                                        style="color: #4a5568; font-size: 12px; font-weight: bold; display: block; margin-bottom: 6px;">🚀
+                                        Executable Binary</span>
+                                    <div
+                                        style="background-color: #edf2f7; color: #2d3748; padding: 12px; border-radius: 6px; font-family: Consolas, Monaco, monospace; font-size: 12px; word-break: break-all; border: 1px solid #e2e8f0;">
+                                        {{ payload.exe.split('\u0000')[0] }}
+                                    </div>
                                 </div>
                                 {% endif %}
 
-                                {% if payload.target %}
-                                <div style="margin-bottom: 12px;">
-                                    <div style="font-size: 11px; color: #718096; font-weight: bold; margin-bottom: 4px;">Additional Target</div>
-                                    <div style="background-color: #f7fafc; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 12px; border: 1px solid #e2e8f0; word-break: break-all;">{{ payload.target }}</div>
+                                {% if payload.path %}
+                                <div style="margin-bottom: 15px;">
+                                    <span
+                                        style="color: #4a5568; font-size: 12px; font-weight: bold; display: block; margin-bottom: 6px;">📂
+                                        Target Object</span>
+                                    <div
+                                        style="background-color: #edf2f7; color: #2d3748; padding: 12px; border-radius: 6px; font-family: Consolas, Monaco, monospace; font-size: 12px; word-break: break-all; border-left: 4px solid #ed8936; border: 1px solid #e2e8f0; border-left-width: 4px;">
+                                        {{ payload.path.split('\u0000')[0] }}
+                                    </div>
                                 </div>
                                 {% endif %}
                             </div>
+
                         </td>
                     </tr>
 
                     <tr>
-                        <td align="center" style="background-color: #f8fafc; padding: 25px; border-top: 1px solid #e2e8f0;">
-                            <p style="margin: 0; color: #718096; font-size: 12px; font-weight: 600;">📊 GPU Resource Monitor (Security Event)</p>
-                            <p style="margin: 5px 0 0 0; color: #718096; font-size: 12px;">
-                                <b>Action:</b> <span style="{% if payload.action == 'BLOCK' %}color: #e53e3e;{% else %}color: #38a169;{% endif %}">{{ payload.action }}</span>
-                                | <b>Event ID:</b> {{ (metadata.event_id if metadata else ts) or 'N/A' }}
-                            </p>
+                        <td align="center"
+                            style="background-color: #f8fafc; padding: 25px; border-top: 1px solid #e2e8f0;">
+                            <p style="margin: 0; color: #718096; font-size: 12px; font-weight: 600;">🛡️ Security
+                                Guardian</p>
                             <p style="margin: 5px 0 0 0; color: #a0aec0; font-size: 11px;">
-                                Time: {{ time }} UTC • Event Type: {{ payload.proc.event }}
+                                Time: {{ time }} UTC • Node: {{ metadata.node if metadata else node }}
                             </p>
+                            {% if metadata and metadata.pod_uid %}
+                            <p style="margin: 2px 0 0 0; color: #cbd5e0; font-size: 10px; font-family: monospace;">
+                                Pod UID: {{ metadata.pod_uid }}
+                            </p>
+                            {% endif %}
                         </td>
                     </tr>
+
                 </table>
+
                 <p style="text-align: center; margin-top: 25px; color: #a0aec0; font-size: 11px;">
-                    This is an automated system alert. Please take immediate action if required.
+                    This is an automated security alert. Please do not reply directly to this email.
                 </p>
+
             </td>
         </tr>
     </table>
 </body>
+
 </html>
