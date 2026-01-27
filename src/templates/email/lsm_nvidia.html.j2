@@ -10,7 +10,7 @@
     <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f4f7; padding: 40px 0;">
         <tr>
             <td align="center">
-                <table border="0" cellpadding="0" cellspacing="0" width="600" class="container" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; width: 600px; max-width: 600px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
+                <table border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; width: 600px; max-width: 600px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
 
                     <tr>
                         <td align="center" style="padding: 35px 30px; border-bottom: 1px solid #edf2f7; background-color: #fffaf0;">
@@ -28,14 +28,17 @@
 
                     <tr>
                         <td style="padding: 35px;">
-
                             <div style="margin-bottom: 25px;">
                                 <span style="text-transform: uppercase; letter-spacing: 0.05em; color: #a0aec0; font-size: 11px; font-weight: 700; display: block; margin-bottom: 10px;">🖥️ Infrastructure Context</span>
-                                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #edf2f7; border-radius: 8px;">
+                                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #edf2f7; border-radius: 8px; font-size: 13px;">
                                     <tr>
-                                        <td style="padding: 15px;">
-                                            <span style="color: #718096; font-size: 11px; font-weight: bold; display: block;">Node (Location)</span>
-                                            <div style="color: #2d3748; font-weight: 600; font-size: 14px;">{{ node }}</div>
+                                        <td style="padding: 12px; border-right: 1px solid #edf2f7;"><b style="color: #718096;">Node (Location):</b><br>{{ node }}</td>
+                                        <td style="padding: 12px;">
+                                            {% if metadata and metadata.namespace %}
+                                                <b style="color: #718096;">Namespace / Pod:</b><br>{{ metadata.namespace }} / {{ metadata.pod }}
+                                            {% else %}
+                                                <b style="color: #718096;">Container:</b><br>{{ (metadata.container if metadata else '-') or '-' }}
+                                            {% endif %}
                                         </td>
                                     </tr>
                                 </table>
@@ -43,7 +46,7 @@
 
                             <div style="margin-bottom: 25px;">
                                 <span style="text-transform: uppercase; letter-spacing: 0.05em; color: #a0aec0; font-size: 11px; font-weight: 700; display: block; margin-bottom: 10px;">🆔 Process Identity</span>
-                                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: separate; border-spacing: 0;">
+                                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: separate; border-spacing: 0; font-size: 13px;">
                                     <tr>
                                         <td style="padding: 12px 15px; background-color: #2d3748; border-radius: 6px 6px 0 0; color: #ffffff; font-weight: 600; font-family: monospace;">
                                             <span style="color: #a0aec0; font-weight: normal; margin-right: 8px;">Command:</span> {{ payload.proc.comm }}
@@ -53,17 +56,17 @@
                                         <td style="padding: 0;">
                                             <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border: 1px solid #e2e8f0; border-top: 0; border-radius: 0 0 6px 6px;">
                                                 <tr>
-                                                    <td width="50%" style="padding: 12px 15px; border-right: 1px solid #e2e8f0;">
-                                                        <div style="font-size: 11px; color: #718096; font-weight: bold; margin-bottom: 2px;">PID / PPID</div>
-                                                        <div style="font-family: monospace; font-size: 13px; color: #2d3748;">
-                                                            {{ payload.proc.pid }} <span style="color: #cbd5e0;">/</span> {{ payload.proc.ppid }}
-                                                        </div>
+                                                    <td width="33%" style="padding: 10px 15px; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">
+                                                        <div style="font-size: 10px; color: #718096; font-weight: bold;">PID / PPID</div>
+                                                        <div style="font-family: monospace;">{{ payload.proc.pid }} / {{ payload.proc.ppid }}</div>
                                                     </td>
-                                                    <td width="50%" style="padding: 12px 15px;">
-                                                        <div style="font-size: 11px; color: #718096; font-weight: bold; margin-bottom: 2px;">UID / GID</div>
-                                                        <div style="font-family: monospace; font-size: 13px; color: #2d3748;">
-                                                            {{ payload.proc.uid | default('N/A') }} <span style="color: #cbd5e0;">/</span> {{ payload.proc.gid | default('N/A') }}
-                                                        </div>
+                                                    <td width="33%" style="padding: 10px 15px; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">
+                                                        <div style="font-size: 10px; color: #718096; font-weight: bold;">UID / GID</div>
+                                                        <div style="font-family: monospace;">{{ payload.proc.uid }} / {{ payload.proc.gid }}</div>
+                                                    </td>
+                                                    <td width="34%" style="padding: 10px 15px; border-bottom: 1px solid #e2e8f0;">
+                                                        <div style="font-size: 10px; color: #718096; font-weight: bold;">TID / Ret</div>
+                                                        <div style="font-family: monospace;">{{ payload.proc.tid }} / {{ payload.proc.ret }}</div>
                                                     </td>
                                                 </tr>
                                             </table>
@@ -73,30 +76,56 @@
                             </div>
 
                             <div>
-                                <span style="text-transform: uppercase; letter-spacing: 0.05em; color: #a0aec0; font-size: 11px; font-weight: 700; display: block; margin-bottom: 10px;">📂 Executable Path</span>
-                                <div style="background-color: #f7fafc; color: #4a5568; padding: 12px; border-radius: 6px; font-family: 'Courier New', Courier, monospace; font-size: 12px; word-break: break-all; border-left: 4px solid #ed8936; border: 1px solid #e2e8f0; border-left-width: 4px;">
-                                    {{ payload.path.split('\u0000')[0] }}
-                                </div>
-                            </div>
+                                <span style="text-transform: uppercase; letter-spacing: 0.05em; color: #a0aec0; font-size: 11px; font-weight: 700; display: block; margin-bottom: 10px;">📋 Evidence & Paths</span>
 
+                                {% if payload.cmdline %}
+                                <div style="margin-bottom: 10px;">
+                                    <div style="font-size: 11px; color: #718096; font-weight: bold; margin-bottom: 4px;">Command Line</div>
+                                    <div style="background-color: #f7fafc; padding: 10px; border-radius: 6px; font-family: monospace; font-size: 12px; border: 1px solid #e2e8f0; word-break: break-all;">{{ payload.cmdline }}</div>
+                                </div>
+                                {% endif %}
+
+                                {% if payload.path %}
+                                <div style="margin-bottom: 10px;">
+                                    <div style="font-size: 11px; color: #718096; font-weight: bold; margin-bottom: 4px;">Path / Target Path</div>
+                                    <div style="background-color: #f7fafc; padding: 10px; border-radius: 6px; font-family: monospace; font-size: 12px; border-left: 4px solid #ed8936; border: 1px solid #e2e8f0; border-left-width: 4px; word-break: break-all;">
+                                        {{ (payload.path or '').split('\u0000')[0] }}
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                {% if payload.exe %}
+                                <div style="margin-bottom: 10px;">
+                                    <div style="font-size: 11px; color: #718096; font-weight: bold; margin-bottom: 4px;">Executable Binary</div>
+                                    <div style="background-color: #f7fafc; padding: 10px; border-radius: 6px; font-family: monospace; font-size: 12px; border: 1px solid #e2e8f0; word-break: break-all;">{{ payload.exe }}</div>
+                                </div>
+                                {% endif %}
+
+                                {% if payload.target %}
+                                <div style="margin-bottom: 10px;">
+                                    <div style="font-size: 11px; color: #718096; font-weight: bold; margin-bottom: 4px;">Target Object</div>
+                                    <div style="background-color: #f7fafc; padding: 10px; border-radius: 6px; font-family: monospace; font-size: 12px; border: 1px solid #e2e8f0; word-break: break-all;">{{ payload.target }}</div>
+                                </div>
+                                {% endif %}
+                            </div>
                         </td>
                     </tr>
 
                     <tr>
                         <td align="center" style="background-color: #f8fafc; padding: 25px; border-top: 1px solid #e2e8f0;">
                             <p style="margin: 0; color: #718096; font-size: 12px; font-weight: 600;">📊 GPU Resource Monitor</p>
+                            <p style="margin: 5px 0 0 0; color: #718096; font-size: 12px;">
+                                <b>Action:</b> <span style="{% if payload.action == 'BLOCK' %}color: #e53e3e;{% else %}color: #38a169;{% endif %}">{{ payload.action }}</span>
+                                | <b>Event ID:</b> {{ (metadata.event_id if metadata else ts) or 'N/A' }}
+                            </p>
                             <p style="margin: 5px 0 0 0; color: #a0aec0; font-size: 11px;">
                                 Detected at: {{ time }} UTC
-                            </p>
-                            <p style="margin: 2px 0 0 0; color: #cbd5e0; font-size: 10px; font-family: monospace;">
-                                Event ID: {{ metadata.event_id | default('N/A') }}
                             </p>
                         </td>
                     </tr>
                 </table>
-
                 <p style="text-align: center; margin-top: 25px; color: #a0aec0; font-size: 11px;">
-                    This is an automated system alert from GPU Watchdog. Please take immediate action if required.
+                    This is an automated system alert from GPU Watchdog.
                 </p>
             </td>
         </tr>
