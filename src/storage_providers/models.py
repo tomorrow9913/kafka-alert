@@ -2,14 +2,12 @@ from __future__ import annotations
 import datetime
 
 from sqlalchemy import (
-    create_engine,
     Text,
     ForeignKey,
     DateTime,
     String,
 )
 from sqlalchemy.orm import (
-    sessionmaker,
     DeclarativeBase,
     Mapped,
     mapped_column,
@@ -71,71 +69,3 @@ class TemplateState(Base):
 
 def create_db_and_tables(engine):
     Base.metadata.create_all(bind=engine)
-
-
-if __name__ == "__main__":
-    from src.core.config import settings
-    from sqlalchemy.dialects.sqlite import insert as sqlite_insert
-
-    DATABASE_URL = settings.DATABASE_CONFIG.DATABASE_URL
-    engine = create_engine(DATABASE_URL)
-
-    print("Dropping all tables...")
-    Base.metadata.drop_all(bind=engine)
-    print("Creating database and tables...")
-    create_db_and_tables(engine)
-    print("Database and tables created.")
-
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    db = SessionLocal()
-
-    try:
-        # 1. Create History (Push)
-        v1 = AlertTemplate(
-            template_key="test/email",
-            content="Hello {{ name }}, this is version 1.",
-            created_by="system_init",
-            description="Initial version",
-        )
-        v2 = AlertTemplate(
-            template_key="test/email",
-            content="Hello {{ name }}, this is the updated version 2!",
-            created_by="user_a",
-            description="Second version with updates",
-        )
-        db.add_all([v1, v2])
-        db.commit()
-        db.refresh(v1)
-        db.refresh(v2)
-        print(f"Created history versions: ID {v1.id} and ID {v2.id}")
-
-        # 2. Create State (Checkout) - UPSERT
-        stmt = sqlite_insert(TemplateState).values(
-            template_key="test/email",
-            active_version_id=v2.id,
-            updated_by="user_a",
-            updated_at=datetime.datetime.now(datetime.timezone.utc),
-        )
-        on_update_stmt = stmt.on_conflict_do_update(
-            index_elements=["template_key"],
-            set_={
-                "active_version_id": stmt.excluded.active_version_id,
-                "updated_by": stmt.excluded.updated_by,
-                "updated_at": stmt.excluded.updated_at,
-            },
-        )
-        db.execute(on_update_stmt)
-        db.commit()
-
-        print("Test data inserted successfully. 'test/email' is now at version 2.")
-
-        # 3. Verify data
-        final_state = db.query(TemplateState).filter_by(template_key="test/email").one()
-        print(f"Verified state: {final_state}")
-        assert final_state.active_version_id == v2.id
-
-    except Exception as e:
-        print(f"Error inserting test data: {e}")
-        db.rollback()
-    finally:
-        db.close()
