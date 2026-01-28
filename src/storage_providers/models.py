@@ -25,7 +25,7 @@ class Base(DeclarativeBase):
 class AlertTemplate(Base):
     """Immutable History: Stores a snapshot of each template version."""
 
-    __tablename__ = "alert_templates"
+    __tablename__ = "AlertTemplates"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     template_key: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
@@ -46,11 +46,11 @@ class AlertTemplate(Base):
 class TemplateState(Base):
     """Mutable State Snapshot: Points to the currently active version of each template."""
 
-    __tablename__ = "template_states"
+    __tablename__ = "TemplateStates"
 
     template_key: Mapped[str] = mapped_column(String(255), primary_key=True, index=True)
     active_version_id: Mapped[int] = mapped_column(
-        ForeignKey("alert_templates.id"), nullable=False
+        ForeignKey("AlertTemplates.id"), nullable=False
     )
     updated_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True),
