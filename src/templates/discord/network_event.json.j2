@@ -49,25 +49,20 @@
           "inline": true
         },
         {
-          "name": "🧷 Source",
-          "value": "`{{ payload.net.source.endpoint if payload is defined and payload.net is defined and payload.net.source is defined and payload.net.source and payload.net.source.endpoint is defined else (src_ip if src_ip is defined and src_ip else 'N/A') }}`",
+          "name": "🧷 Source IP",
+          "value": "`{{ src_ip if src_ip is defined and src_ip else 'N/A' }}`",
           "inline": true
         },
         {
-          "name": "🎯 Destination",
-          "value": "`{{ payload.net.destination.endpoint if payload is defined and payload.net is defined and payload.net.destination is defined and payload.net.destination and payload.net.destination.endpoint is defined else 'N/A' }}`",
+          "name": "🎯 Destination IP",
+          "value": "`{{ dest_ip if dest_ip is defined and dest_ip else 'N/A' }}`",
           "inline": true
         },
 
-        {# --- Row 4: Protocol / State / Bytes --- #}
+        {# --- Row 4: Protocol / Bytes --- #}
         {
           "name": "🧪 Protocol",
           "value": "`{{ payload.net.proto if payload is defined and payload.net is defined and payload.net.proto is defined and payload.net.proto else 'N/A' }}`",
-          "inline": true
-        },
-        {
-          "name": "🔁 State",
-          "value": "`{{ payload.net.state if payload is defined and payload.net is defined and payload.net.state is defined and payload.net.state else 'N/A' }}`",
           "inline": true
         },
         {

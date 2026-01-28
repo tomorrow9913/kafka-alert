@@ -87,16 +87,21 @@ class EmailProvider(BaseSenderProvider):
             to_emails = [destination]
 
         # Cc
-        cc_emails = meta.get("cc", [])
-        if isinstance(cc_emails, str):
-            cc_emails = [cc_emails]
+        cc_raw = meta.get("cc") or []  # None 방지
+        if isinstance(cc_raw, str):
+            cc_emails = [e.strip() for e in cc_raw.split(",") if e.strip()]
+        else:
+            cc_emails = list(cc_raw) if isinstance(cc_raw, (list, tuple)) else []
+
         if cc_emails:
-            message["Cc"] = ",".join(cc_emails)
+            message["Cc"] = ", ".join(cc_emails)
 
         # Bcc
-        bcc_emails = meta.get("bcc", [])
-        if isinstance(bcc_emails, str):
-            bcc_emails = [bcc_emails]
+        bcc_raw = meta.get("bcc") or []  # None 방지
+        if isinstance(bcc_raw, str):
+            bcc_emails = [e.strip() for e in bcc_raw.split(",") if e.strip()]
+        else:
+            bcc_emails = list(bcc_raw) if isinstance(bcc_raw, (list, tuple)) else []
 
         all_recipients = to_emails + cc_emails + bcc_emails
 
