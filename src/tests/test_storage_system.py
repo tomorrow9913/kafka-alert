@@ -5,7 +5,7 @@ import time
 import unittest
 from unittest.mock import patch
 
-from src.storage_providers.models import create_db_and_tables
+from src.models import create_db_and_tables
 from src.storage_providers.provider.db_provider import DatabaseProvider
 from src.storage_providers.provider.file_provider import FileSystemProvider
 from src.storage_providers.storage_manager import TemplateStorageManager

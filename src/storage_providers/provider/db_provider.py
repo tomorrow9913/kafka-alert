@@ -10,7 +10,7 @@ from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from src.core.config import settings
 from src.schema.alert_schema import TemplateDto
-from src.storage_providers.models import AlertTemplate, TemplateState, Base
+from src.models import AlertTemplate, TemplateState, Base
 from src.storage_providers.provider.storage_base import BaseStorageProvider
 from src.utils.logger import LogManager
 
