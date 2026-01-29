@@ -2,7 +2,7 @@
 # src/utils/alert/schema.py
 import datetime
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 from pydantic import BaseModel, model_validator
 
@@ -13,7 +13,7 @@ class Provider(str, Enum):
     EMAIL = "email"
 
 
-class AlertPayload(BaseModel):
+class DirectAlertPayload(BaseModel):
     provider: Provider
     template: Optional[str] = None
     template_content: Optional[str] = None
@@ -29,6 +29,24 @@ class AlertPayload(BaseModel):
                 "Both 'template' and 'template_content' cannot be set at the same time."
             )
         return self
+
+
+class EventAlertPayload(BaseModel):
+    event: str
+    data: Dict[str, Any]
+    template_content: Optional[str] = None  # 테스트용 1회성 템플릿 허용
+    destination: Optional[str] = None  # 테스트용 강제 수신처 허용
+
+    @model_validator(mode="after")
+    def check_node_info(self):
+        # data 안에 node 정보가 필수라고 가정 (DB 조회를 위해)
+        if "node" not in self.data:
+            raise ValueError("Field 'data.node' is required for event-based routing.")
+        return self
+
+
+# 통합 Payload (Dispatcher에서 사용)
+AlertPayload = Union[DirectAlertPayload, EventAlertPayload]
 
 
 class TemplateDto(BaseModel):

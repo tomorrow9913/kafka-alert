@@ -12,6 +12,8 @@ class AppConfig(BaseModel):
     LOG_MAX_BYTES: int = 10 * 1024 * 1024  # 10 MB
     LOG_BACKUP_COUNT: int = 5
     ENV: str = "prod"
+    ROUTING_CACHE_TTL: int = 300  # 5분
+    ROUTING_CACHE_MAXSIZE: int = 1000
 
 
 class KafkaConsumerConfig(BaseModel):

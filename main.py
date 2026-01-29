@@ -54,7 +54,7 @@ async def main():
         "slack": SlackProvider(renderer=renderer),
         "email": EmailProvider(renderer=renderer),
     }
-    dispatcher = NotificationDispatcher(providers)
+    dispatcher = NotificationDispatcher(providers=providers, db_provider=db_provider)
     logger.info("Notification dispatcher is ready.")
 
     # 3. Initialize and run the Kafka manager
