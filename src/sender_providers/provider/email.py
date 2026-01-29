@@ -86,6 +86,9 @@ class EmailProvider(BaseSenderProvider):
         else:
             to_emails = [destination]
 
+        if to_emails:
+            message["To"] = ", ".join(to_emails)
+
         # Cc
         cc_raw = meta.get("cc") or []  # None 방지
         if isinstance(cc_raw, str):
