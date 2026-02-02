@@ -26,6 +26,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Final stage
 FROM python:3.12-alpine
 
+RUN apk add --no-cache libpq
+
 WORKDIR /app
 
 # Copy the virtual environment from the builder
